@@ -18,15 +18,6 @@ REGIONS.forEach(r => {
   b.addEventListener('click', () => { stopTour(); navigate(r.path); });
   secNav.appendChild(b); r.secBtn = b;
 });
-const pinned = BUILDINGS.filter(b => b.pinned);
-if (pinned.length){
-  const h = document.createElement('div'); h.className = 'sec-h pin-h'; h.textContent = 'PINNED'; secNav.appendChild(h);
-  pinned.forEach(b => {
-    const el = document.createElement('button'); el.type = 'button'; el.className = 'pin';
-    el.innerHTML = `<span class="k">★</span><span class="n"><b>${esc(b.title)}</b></span>`;
-    el.addEventListener('click', () => navigate(b.path)); secNav.appendChild(el);
-  });
-}
 $('b-world').addEventListener('click', () => { stopTour(); if (ST.focusWant) leaveFocus(); else { navigate('/'); flyWorld(); } });
 $('b-pal').addEventListener('click', () => openPalette());
 $('b-tour').addEventListener('click', () => toggleTour());

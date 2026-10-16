@@ -15,7 +15,6 @@ import './palette.js';
 import './router.js';
 import './input.js';
 import './hud.js';
-import './trainlabel.js';
 import './render.js';
 import './loop.js';
 import './boot.js';

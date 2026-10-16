@@ -18,7 +18,7 @@ const pos = [], idx = [];
 function quad(a, b, c, d){ const o = pos.length/3; pos.push(...a, ...b, ...c, ...d); idx.push(o, o+1, o+2, o+2, o+1, o+3); }
 const P = (x, z, side, nx, nz, w) => { const px = x + nx*side*w, pz = z + nz*side*w; return [px, hAt(px, pz) + LIFT, pz]; };
 
-export const borderLines = []; // polylines in world space with cumulative arc length, for the train label
+export const borderLines = []; // polylines in world space with cumulative arc length
 for (const e of BORDERS){
   const s = resample(e.pts, 2), cum = [0];
   for (let i = 1; i < s.length; i++) cum.push(cum[i-1] + Math.hypot(s[i][0]-s[i-1][0], s[i][1]-s[i-1][1]));

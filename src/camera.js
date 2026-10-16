@@ -1,21 +1,32 @@
+/* ================= CAMERA STATE =================
+   Explore pose: orbit-less target + effective distance, elevation tied to distance (50°..66° above horizontal).
+   Focus pose: low (≈20°) look at one building, composition shifted so it sits in the left ~40% of the screen. */
 import {ST} from './state.js';
 import {reduce} from './core.js';
-import {HALF, hAt} from './terrain.js';
+import {hAt} from './terrain.js';
 import {renderer, camera} from './scene.js';
-/* ================= CAMERA STATE ================= */
-const smooth = (a, b, x) => { let t = (x-a)/(b-a); t = t<0?0:t>1?1:t; return t*t*(3-2*t); };
-const clamp = (v, a, b) => v<a?a:v>b?b:v;
-const cam = {x:0, z:12, deff:330, dist:330, elev:.9};
-const D_MIN = 55, D_MAX = 440, LIM = HALF - 70;
+import {M} from './world.js';
+
+export const smooth = (a, b, x) => { let t = (x-a)/(b-a); t = t<0?0:t>1?1:t; return t*t*(3-2*t); };
+export const clamp = (v, a, b) => v<a?a:v>b?b:v;
+export const lerp = (a, b, t) => a + (b-a)*t;
+export const ease = t => t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+const WORLD = {x: (M.extent.minX + M.extent.maxX)/2, z: (M.extent.minZ + M.extent.maxZ)/2};
+export const WORLD_VIEW = {x: WORLD.x, z: WORLD.z + 10, deff: 400};
+export const cam = {x:0, z:0, deff:WORLD_VIEW.deff, dist:WORLD_VIEW.deff, elev:.9};
+export const D_MIN = 55, D_MAX = 520, FOCUS_EL = 20*Math.PI/180;
+cam.rx = cam.x; cam.rz = cam.z;
 ST.camTy = hAt(cam.x, cam.z); // focus height: eased only during fly-to, held during free movement
-function flyTo(x, z, deff, ms = 850){
+
+export function flyTo(x, z, deff, ms = 850){
   ST.tween = {fx:cam.x, fz:cam.z, fd:cam.deff, tx:x, tz:z, td:clamp(deff, D_MIN, D_MAX), fy:ST.camTy, ty:hAt(x, z), t0:performance.now(), dur: reduce ? 1 : ms};
 }
-function flyToZone(z){ flyTo(z.x, z.z + z.R*.12, 86); }
-function flyWorld(){ flyTo(0, 12, 330); }
-const ease = t => t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+export const REGION_VIEW = 125;
+export const flyToRegion = (r, deff = REGION_VIEW) => flyTo(r.x, r.z - 24, deff);
+export const flyWorld = () => flyTo(WORLD_VIEW.x, WORLD_VIEW.z, WORLD_VIEW.deff);
+export const flyToBuilding = (b, deff = 70) => flyTo(b.x, b.z + 4, deff);
 
-function resize(){
+export function resize(){
   ST.Wd = innerWidth; ST.Hd = innerHeight;
   renderer.setSize(ST.Wd, ST.Hd, false);
   camera.aspect = ST.Wd/ST.Hd; camera.updateProjectionMatrix();
@@ -23,12 +34,35 @@ function resize(){
 }
 addEventListener('resize', resize); resize();
 
-function updateCamera(){
+const exPos = {x:0, y:0, z:0}, exLook = {x:0, y:0, z:0};
+export function explorePose(){
   cam.dist = cam.deff / ST.narrow;
-  cam.elev = 45 * Math.PI/180;
-  const ty = ST.camTy;
-  camera.position.set(cam.x, ty + cam.dist*Math.sin(cam.elev), cam.z + cam.dist*Math.cos(cam.elev));
-  camera.lookAt(cam.x, ty, cam.z);
+  cam.elev = (66 - 16*smooth(D_MIN, D_MAX, cam.deff)) * Math.PI/180;
+  exLook.x = cam.x; exLook.y = ST.camTy; exLook.z = cam.z;
+  exPos.x = cam.x; exPos.y = ST.camTy + cam.dist*Math.sin(cam.elev); exPos.z = cam.z + cam.dist*Math.cos(cam.elev);
+  return [exPos, exLook];
 }
-
-export {smooth, clamp, cam, D_MIN, D_MAX, LIM, flyTo, flyToZone, flyWorld, ease, resize, updateCamera};
+/** Desired focus target for a building: look point + camera distance that frames it. */
+export function focusTargetFor(b){
+  const size = Math.max(b.height, b.params.w*1.7, 12);
+  return {x:b.x, y:b.base + b.height*.42, z:b.z, dist: (size*2.5 + 16) / Math.max(.8, ST.narrow)};
+}
+const fPos = {x:0, y:0, z:0}, fLook = {x:0, y:0, z:0};
+export function updateCamera(){
+  const [p, l] = explorePose();
+  const a = ease(clamp(ST.focusAmt, 0, 1));
+  if (a > 0 && ST.focusCur){
+    const f = ST.focusCur, az = ST.orbit.az, el = FOCUS_EL + ST.orbit.el;
+    fLook.x = f.x; fLook.y = f.y; fLook.z = f.z;
+    fPos.x = f.x + f.dist*Math.sin(az)*Math.cos(el); fPos.y = f.y + f.dist*Math.sin(el); fPos.z = f.z + f.dist*Math.cos(az)*Math.cos(el);
+    camera.position.set(lerp(p.x, fPos.x, a), lerp(p.y, fPos.y, a), lerp(p.z, fPos.z, a));
+    camera.lookAt(lerp(l.x, fLook.x, a), lerp(l.y, fLook.y, a), lerp(l.z, fLook.z, a));
+    // building to the left ~40% of the screen (or upper part on phones, panel is a bottom sheet)
+    const mobile = ST.Wd < 760;
+    camera.setViewOffset(ST.Wd, ST.Hd, mobile ? 0 : a*ST.Wd*.1, mobile ? a*ST.Hd*.2 : 0, ST.Wd, ST.Hd);
+  } else {
+    camera.position.set(p.x, p.y, p.z); camera.lookAt(l.x, l.y, l.z);
+    if (camera.view && camera.view.enabled) camera.clearViewOffset();
+  }
+  camera.updateMatrixWorld();
+}

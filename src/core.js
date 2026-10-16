@@ -1,5 +1,3 @@
-const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-const $ = id => document.getElementById(id);
-
-export {reduce, $};
+export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const $ = id => document.getElementById(id);
+export const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

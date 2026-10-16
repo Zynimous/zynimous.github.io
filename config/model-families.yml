@@ -1,0 +1,12 @@
+# category / type -> building family (see src/buildings.js for geometry per family)
+default: block
+categories:
+  systems: bunker
+  graphics: tower
+  algorithms: lattice
+  meta: block
+  identity: block
+types:
+  project: facility
+  note: hut
+flagship: citadel

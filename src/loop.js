@@ -1,107 +1,119 @@
-import * as THREE from 'three';
+/* ================= LOOP ================= */
 import {ST} from './state.js';
-import {$} from './core.js';
-import {ZONES, ZMAP} from './data.js';
-import {N, hAt, meters, gridRef} from './terrain.js';
-import {canvas, renderer, scene, FOV, camera, terrainUniforms, dashMats} from './scene.js';
-import {labels} from './labels.js';
-import {smooth, clamp, cam, D_MIN, D_MAX, LIM, flyToZone, flyWorld, ease, updateCamera} from './camera.js';
-import {pick, zoneAt} from './picking.js';
+import {$, reduce} from './core.js';
+import {REGIONS, RMAP, regionAt, nearestRegion, limitToReach} from './world.js';
+import {hAt, meters, gridRef} from './terrain.js';
+import {camera, FOV, terrainUniforms, dashMats, updateTerrain} from './scene.js';
+import {clamp, cam, D_MIN, D_MAX, flyToRegion, flyWorld, updateCamera, lerp, ease} from './camera.js';
+import {pick, pickObject} from './picking.js';
 import {keys} from './input.js';
 import {renderCrumbs, drawMini} from './hud.js';
 import {TOUR, stopTour, updTour} from './tour.js';
-/* ================= LOOP ================= */
+import {setHover, buildingMats} from './buildings.js';
+import {focusGoal} from './focus.js';
+import {render} from './render.js';
+import {updateSignage} from './signage.js';
+import {updateTrain} from './trainlabel.js';
+import {syncRegionUrl} from './router.js';
+
 ST.last = performance.now();
-const tmp = new THREE.Vector3();
-function frame(now){
+export function frame(now){
   const dt = Math.min((now - ST.last)/1000, .05); ST.last = now; ST.time += dt;
+  const focusing = !!ST.focusWant;
 
   // keyboard
-  if (keys.size){
+  if (keys.size && !focusing){
     const sp = cam.deff * 1.0 * dt;
-    if (keys.has('KeyW') || keys.has('ArrowUp')) cam.z -= sp;
-    if (keys.has('KeyS') || keys.has('ArrowDown')) cam.z += sp;
-    if (keys.has('KeyA') || keys.has('ArrowLeft')) cam.x -= sp;
-    if (keys.has('KeyD') || keys.has('ArrowRight')) cam.x += sp;
+    if (keys.has('KeyW') || keys.has('ArrowUp')) cam.rz -= sp;
+    if (keys.has('KeyS') || keys.has('ArrowDown')) cam.rz += sp;
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) cam.rx -= sp;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) cam.rx += sp;
     if (keys.has('KeyQ') || keys.has('Minus')) cam.deff = clamp(cam.deff * Math.exp(dt*1.3), D_MIN, D_MAX);
     if (keys.has('KeyE') || keys.has('Equal')) cam.deff = clamp(cam.deff * Math.exp(-dt*1.3), D_MIN, D_MAX);
   }
-  // ST.tween
+  // tween
   if (ST.tween){
-    const t = clamp((now - ST.tween.t0)/ST.tween.dur, 0, 1), e = ease(t);
-    cam.x = ST.tween.fx + (ST.tween.tx - ST.tween.fx)*e; cam.z = ST.tween.fz + (ST.tween.tz - ST.tween.fz)*e;
-    ST.camTy = ST.tween.fy + (ST.tween.ty - ST.tween.fy)*e;
-    cam.deff = Math.exp(Math.log(ST.tween.fd) + (Math.log(ST.tween.td) - Math.log(ST.tween.fd))*e);
+    const tw = ST.tween, t = clamp((now - tw.t0)/tw.dur, 0, 1), e = ease(t);
+    cam.rx = tw.fx + (tw.tx - tw.fx)*e; cam.rz = tw.fz + (tw.tz - tw.fz)*e;
+    ST.camTy = tw.fy + (tw.ty - tw.fy)*e;
+    cam.deff = Math.exp(Math.log(tw.fd) + (Math.log(tw.td) - Math.log(tw.fd))*e);
     if (t >= 1) ST.tween = null;
   }
-  // soft bounds
-  if (!ST.drag){
-    if (Math.abs(cam.x) > LIM) cam.x += (Math.sign(cam.x)*LIM - cam.x) * Math.min(1, dt*6);
-    if (Math.abs(cam.z) > LIM) cam.z += (Math.sign(cam.z)*LIM - cam.z) * Math.min(1, dt*6);
+  // reach limit: rubber band past the outermost borders, spring back on release
+  if (!focusing){
+    let L = limitToReach(cam.rx, cam.rz);
+    if (L.over > 260){ const k = 260/L.over; cam.rx = L.lx + (cam.rx - L.lx)*k; cam.rz = L.lz + (cam.rz - L.lz)*k; L = limitToReach(cam.rx, cam.rz); }
+    if (!ST.drag && !keys.size && !ST.tween && L.over > .01){
+      const k = reduce ? 1 : Math.min(1, dt*5);
+      cam.rx += (L.lx - cam.rx)*k; cam.rz += (L.lz - cam.rz)*k; L = limitToReach(cam.rx, cam.rz);
+    }
+    cam.x = L.x; cam.z = L.z;
   }
-  cam.x = clamp(cam.x, -LIM-60, LIM+60); cam.z = clamp(cam.z, -LIM-60, LIM+60);
+  // focus blend + glide between buildings
+  const rate = reduce ? 99 : 1/.95;
+  if (focusing){ ST.focusAmt = Math.min(1, ST.focusAmt + dt*rate); }
+  else if (ST.focusAmt > 0){
+    ST.focusAmt = Math.max(0, ST.focusAmt - dt*rate);
+    if (ST.focusAmt === 0){ ST.focusB = null; ST.focusCur = null; }
+  }
+  if (ST.focusB && ST.focusCur){
+    const g = focusGoal(), k = reduce ? 1 : 1 - Math.exp(-dt*(ST.exiting ? 2.6 : 4.5));
+    ST.focusCur.x = lerp(ST.focusCur.x, g.x, k); ST.focusCur.y = lerp(ST.focusCur.y, g.y, k);
+    ST.focusCur.z = lerp(ST.focusCur.z, g.z, k); ST.focusCur.dist = lerp(ST.focusCur.dist, g.dist, k);
+  }
   updateCamera();
+  updateTerrain(cam.x, cam.z);
 
-  // ST.tour
+  // tour
   if (ST.tour && !ST.tween){
     ST.tour.wait += dt;
     if (ST.tour.wait > 2.8){
       ST.tour.wait = 0; ST.tour.i++;
       if (ST.tour.i >= TOUR.length){ stopTour(); flyWorld(); }
-      else { flyToZone(ZMAP[TOUR[ST.tour.i]]); updTour(); }
+      else { flyToRegion(TOUR[ST.tour.i]); updTour(); }
     }
   }
 
-  // semantic zoom detail
-  let best = null, bestD = .5;
-  ZONES.forEach(z => {
-    const d = Math.hypot(cam.x - z.x, cam.z - z.z);
-    z.detail = smooth(175, 118, cam.deff) * (1 - smooth(z.R*1.1, z.R*2.6, d));
-    z.detailMat.opacity = z.detail * .75;
-    z.spokeMat.uniforms.uOpacity.value = z.detail * .55;
-    z.wallMat.opacity = .7 + z.detail*.3;
-    if (z.detail > bestD){ bestD = z.detail; best = z; }
-  });
-  if (best !== ST.activeZone){
-    ST.activeZone = best;
-    ZONES.forEach(z => z.secBtn.classList.toggle('on', z === ST.activeZone));
-    if (!ST.curItem){ try { history.replaceState(null, '', '#' + (ST.activeZone ? ST.activeZone.id : '')); } catch(_){} }
+  // active region (nearest centre to the look target)
+  const active = focusing && ST.focusB ? RMAP[ST.focusB.region] : nearestRegion(cam.x, cam.z);
+  if (active !== ST.activeRegion){
+    ST.activeRegion = active;
+    REGIONS.forEach(r => r.secBtn.classList.toggle('on', r === active));
+    syncRegionUrl(active);
   }
-  renderCrumbs(ST.activeZone || (ST.curItem && ZMAP[ST.curItem.zone]), ST.curItem);
+  renderCrumbs(ST.focusB ? RMAP[ST.focusB.region] : ST.activeRegion, ST.focusB);
 
-  // cursor
-  if (ST.mouse && ST.mouseDirty){ ST.cursorPt = pick(ST.mouse.x, ST.mouse.y); ST.mouseDirty = false; ST.cursorZone = ST.cursorPt ? zoneAt(ST.cursorPt.x, ST.cursorPt.z) : null; canvas.style.cursor = ST.drag ? '' : (ST.cursorZone ? 'pointer' : ''); }
-  if (!ST.mouse){ ST.cursorZone = null; }
+  // cursor: terrain point + building/landmark under the pointer
+  if (ST.mouse && ST.mouseDirty && !focusing){
+    ST.cursorPt = pick(ST.mouse.x, ST.mouse.y); ST.mouseDirty = false;
+    const hit = pickObject(ST.mouse.x, ST.mouse.y);
+    ST.hoverB = hit?.b || (ST.hoverB && ST.hoverB.tag?.card.matches(':hover') ? ST.hoverB : null);
+    ST.cursorRegion = hit?.region || (ST.cursorPt ? regionAt(ST.cursorPt.x, ST.cursorPt.z) : null);
+    setHover(hit?.b ? hit.b.index : hit?.region ? -2 - hit.region.index : -9);
+    $('scene').style.cursor = ST.drag ? '' : (hit ? 'pointer' : '');
+  }
+  if (!ST.mouse){ ST.cursorRegion = null; if (!ST.hoverB) setHover(-9); }
+  if (focusing) setHover(-9);
   const u = terrainUniforms;
   u.uZoom.value = cam.deff;
-  if (ST.cursorPt){ u.uCursor.value.set(ST.cursorPt.x, ST.cursorPt.z); u.uCursorOn.value += (1 - u.uCursorOn.value)*Math.min(1, dt*6); }
+  if (ST.cursorPt && !focusing){ u.uCursor.value.set(ST.cursorPt.x, ST.cursorPt.z); u.uCursorOn.value += (1 - u.uCursorOn.value)*Math.min(1, dt*6); }
   else u.uCursorOn.value += (0 - u.uCursorOn.value)*Math.min(1, dt*4);
-  const fz = ST.hoverZone || ST.cursorZone || ST.activeZone;
-  if (fz){ u.uFocus.value.set(fz.x, fz.z); }
-  const fTarget = (ST.hoverZone || ST.cursorZone) ? 1 : (ST.activeZone ? .45 : 0);
+  const fz = ST.hoverRegion || ST.cursorRegion || ST.activeRegion;
+  if (fz) u.uFocus.value.set(fz.x, fz.z);
+  const fTarget = (ST.hoverRegion || (ST.cursorRegion && ST.mouse)) ? 1 : (ST.activeRegion ? .45 : 0);
   u.uFocusAmt.value += (fTarget - u.uFocusAmt.value)*Math.min(1, dt*5);
-  if (u.uIntro.value < 1.2) u.uIntro.value = Math.min(1.2, u.uIntro.value + dt*.75);
+  if (u.uIntro.value < 1.6) u.uIntro.value = Math.min(1.6, u.uIntro.value + dt*.75);
 
   dashMats.forEach(m => m.uniforms.uTime.value = ST.time);
-  renderer.render(scene, camera);
+  buildingMats.edgeMat.uniforms.uTime.value = ST.time;
+  render();
 
-  // labels
-  for (const L of labels){
-    const a = L.alpha();
-    if (a < .02){ if (L.vis){ L.el.style.visibility = 'hidden'; L.vis = false; } continue; }
-    tmp.copy(L.pos).project(camera);
-    if (tmp.z > 1 || Math.abs(tmp.x) > 1.25 || Math.abs(tmp.y) > 1.25){ if (L.vis){ L.el.style.visibility = 'hidden'; L.vis = false; } continue; }
-    if (!L.vis){ L.el.style.visibility = 'visible'; L.vis = true; }
-    const x = (tmp.x*.5 + .5)*ST.Wd, y = (-tmp.y*.5 + .5)*ST.Hd;
-    L.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
-    L.el.style.opacity = a.toFixed(3);
-    L.el.style.zIndex = String(5000 - Math.round(camera.position.distanceTo(L.pos)));
-    if (L.card) L.card.style.pointerEvents = a > .5 ? 'auto' : 'none';
-  }
+  updateSignage();
+  updateTrain(dt);
 
   // readouts
   $('r-tgt').textContent = `E ${gridRef(cam.x)} · N ${gridRef(-cam.z)}`;
-  if (ST.cursorPt){ $('r-cur').textContent = `E ${gridRef(ST.cursorPt.x)} · N ${gridRef(-ST.cursorPt.z)}`; $('r-elev').textContent = meters(ST.ST.cursorPt.h) + ' m'; }
+  if (ST.cursorPt){ $('r-cur').textContent = `E ${gridRef(ST.cursorPt.x)} · N ${gridRef(-ST.cursorPt.z)}`; $('r-elev').textContent = meters(ST.cursorPt.h) + ' m'; }
   else { $('r-cur').textContent = '—'; $('r-elev').textContent = meters(hAt(cam.x, cam.z)) + ' m'; }
   $('r-alt').textContent = (Math.round(camera.position.y*10 + 120)).toLocaleString('en-US') + ' m';
   const upp = 2*cam.dist*Math.tan(FOV*Math.PI/360)/ST.Hd * 10; // meters per px
@@ -113,5 +125,3 @@ function frame(now){
   drawMini();
   requestAnimationFrame(frame);
 }
-
-export {tmp, frame};

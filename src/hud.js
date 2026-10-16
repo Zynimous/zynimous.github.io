@@ -1,42 +1,50 @@
+/* ================= HUD ================= */
 import * as THREE from 'three';
 import {ST} from './state.js';
-import {reduce, $} from './core.js';
-import {ZONES, ZMAP} from './data.js';
-import {S, HALF, hAt} from './terrain.js';
+import {$, reduce, esc} from './core.js';
+import {REGIONS, BUILDINGS, RMAP, M, regionAt, limitToReach} from './world.js';
+import {hAt} from './terrain.js';
 import {camera} from './scene.js';
-import {clamp, cam, LIM, flyTo, flyToZone, flyWorld} from './camera.js';
-import {ray, ndc, zoneAt} from './picking.js';
-import {closeIntel} from './intel.js';
+import {cam, clamp, flyTo, flyWorld} from './camera.js';
+import {ray, ndc} from './picking.js';
+import {stopTour, toggleTour} from './tour.js';
 import {openPalette} from './palette.js';
-import {toggleTour, stopTour} from './tour.js';
-/* ================= HUD ================= */
+import {navigate, leaveFocus} from './router.js';
+
 const secNav = $('hud-left');
-ZONES.forEach(z => {
+REGIONS.forEach(r => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'sec';
-  b.innerHTML = `<span class="k">${z.key}</span><span class="n"><b>${z.name}</b><span>${z.code} · ${z.zh}</span></span>`;
-  b.addEventListener('click', () => { stopTour(); flyToZone(z); });
-  secNav.appendChild(b); z.secBtn = b;
+  b.innerHTML = `<span class="k">${r.key}</span><span class="n"><b>${esc(r.name)}</b><span>${r.code} · ${esc(r.zh)} · ${r.items.length}</span></span>`;
+  b.addEventListener('click', () => { stopTour(); navigate(r.path); });
+  secNav.appendChild(b); r.secBtn = b;
 });
-$('b-world').addEventListener('click', () => { stopTour(); flyWorld(); });
-$('b-pal').addEventListener('click', openPaletteFn);
+const pinned = BUILDINGS.filter(b => b.pinned);
+if (pinned.length){
+  const h = document.createElement('div'); h.className = 'sec-h pin-h'; h.textContent = 'PINNED'; secNav.appendChild(h);
+  pinned.forEach(b => {
+    const el = document.createElement('button'); el.type = 'button'; el.className = 'pin';
+    el.innerHTML = `<span class="k">★</span><span class="n"><b>${esc(b.title)}</b></span>`;
+    el.addEventListener('click', () => navigate(b.path)); secNav.appendChild(el);
+  });
+}
+$('b-world').addEventListener('click', () => { stopTour(); if (ST.focusWant) leaveFocus(); else { navigate('/'); flyWorld(); } });
+$('b-pal').addEventListener('click', () => openPalette());
 $('b-tour').addEventListener('click', () => toggleTour());
-function openPaletteFn(){ openPalette(); }
 
 const crumbs = $('crumbs');
 let crumbKey = '';
-function renderCrumbs(zone, item){
-  const key = (zone?zone.id:'') + '|' + (item?item.id:'');
+export function renderCrumbs(region, item){
+  const key = (region?region.id:'') + '|' + (item?item.id:'');
   if (key === crumbKey) return; crumbKey = key;
-  const parts = [`<button type="button" data-c="world" class="${zone?'':'cur'}">WORLD</button>`];
-  if (zone) parts.push('<span class="sep">/</span>', `<button type="button" data-c="${zone.id}" class="${item?'':'cur'}">${zone.name}</button>`);
+  const parts = [`<button type="button" data-c="world" class="${region?'':'cur'}">WORLD</button>`];
+  if (region) parts.push('<span class="sep">/</span>', `<button type="button" data-c="${region.id}" class="${item?'':'cur'}">${esc(region.name)}</button>`);
   if (item) parts.push('<span class="sep">/</span>', `<span class="cur">${item.code}</span>`);
   crumbs.innerHTML = parts.join('');
 }
 crumbs.addEventListener('click', e => {
   const c = e.target.closest('button')?.dataset.c; if (!c) return;
-  if (document.body.classList.contains('reading')) closeIntel();
   stopTour();
-  if (c === 'world') flyWorld(); else flyToZone(ZMAP[c]);
+  if (c === 'world'){ navigate('/'); flyWorld(); } else navigate(RMAP[c].path);
 });
 
 const tf = new Intl.DateTimeFormat('en-GB', {timeZone:'Asia/Taipei', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
@@ -55,22 +63,27 @@ tick(); setInterval(tick, 1000);
   }, 45);
 })();
 
-/* minimap */
+/* minimap: covers the whole reachable world (read from the manifest, so it grows with the map) */
 const mini = $('mini'), mctx = mini.getContext('2d');
-const MRES = 176;
+const MRES = 176, PADM = 40;
+const ext = M.extent, MW = Math.max(ext.maxX - ext.minX, ext.maxZ - ext.minZ) + PADM*2;
+const MX0 = (ext.minX + ext.maxX)/2 - MW/2, MZ0 = (ext.minZ + ext.maxZ)/2 - MW/2;
 const miniBase = document.createElement('canvas'); miniBase.width = miniBase.height = MRES;
 {
   const ctx = miniBase.getContext('2d'), img = ctx.createImageData(MRES, MRES);
-  const w2m = S/MRES, hm = new Float32Array(MRES*MRES);
-  for (let y=0;y<MRES;y++) for (let x=0;x<MRES;x++) hm[y*MRES+x] = hAt(-HALF + (x+.5)*w2m, -HALF + (y+.5)*w2m);
+  const w2m = MW/MRES, hm = new Float32Array(MRES*MRES), inside = new Uint8Array(MRES*MRES);
+  for (let y=0;y<MRES;y++) for (let x=0;x<MRES;x++){
+    const wx = MX0 + (x+.5)*w2m, wz = MZ0 + (y+.5)*w2m;
+    hm[y*MRES+x] = hAt(wx, wz); inside[y*MRES+x] = regionAt(wx, wz) ? 1 : 0;
+  }
   for (let y=0;y<MRES;y++) for (let x=0;x<MRES;x++){
     const h = hm[y*MRES+x], c = Math.floor(h/4);
     const r = x<MRES-1 ? Math.floor(hm[y*MRES+x+1]/4) : c, d = y<MRES-1 ? Math.floor(hm[(y+1)*MRES+x]/4) : c;
     const line = (r !== c || d !== c);
     const major = line && (Math.floor(h/20) !== Math.floor((x<MRES-1?hm[y*MRES+x+1]:h)/20) || Math.floor(h/20) !== Math.floor((y<MRES-1?hm[(y+1)*MRES+x]:h)/20));
-    const k = (y*MRES+x)*4, base = 6 + Math.max(0,h)*.12;
-    if (line){ const a = major ? .85 : .42; img.data[k] = img.data[k+1] = img.data[k+2] = 207*a + base*(1-a); }
-    else { img.data[k] = img.data[k+1] = img.data[k+2] = base; }
+    const k = (y*MRES+x)*4, base = 6 + Math.max(0,h)*.12, dim = inside[y*MRES+x] ? 1 : .35;
+    if (line){ const a = (major ? .85 : .42)*dim; img.data[k] = img.data[k+1] = img.data[k+2] = 207*a + base*(1-a); }
+    else { img.data[k] = img.data[k+1] = img.data[k+2] = base*dim; }
     img.data[k+3] = 255;
   }
   ctx.putImageData(img, 0, 0);
@@ -80,27 +93,29 @@ function sizeMini(){
   mini.width = Math.max(1, Math.round(r.width*dpr)); mini.height = Math.max(1, Math.round(r.height*dpr));
 }
 addEventListener('resize', sizeMini); sizeMini();
-const v3 = new THREE.Vector3();
-function groundAt(nx, ny){
+export function groundAt(nx, ny){
   ndc.set(nx, ny); ray.setFromCamera(ndc, camera);
   const o = ray.ray.origin, d = ray.ray.direction;
-  let t = d.y < -0.02 ? (12 - o.y)/d.y : 1400; t = Math.min(t, 1400);
+  let t = d.y < -0.02 ? (hAt(o.x + d.x*400, o.z + d.z*400) - o.y)/d.y : 900; t = clamp(t, 0, 900);
   return [o.x + d.x*t, o.z + d.z*t];
 }
-function drawMini(){
-  const w = mini.width, h = mini.height, s = w/S;
+export function drawMini(){
+  const w = mini.width, h = mini.height, s = w/MW;
   mctx.imageSmoothingEnabled = true;
   mctx.drawImage(miniBase, 0, 0, w, h);
-  const toM = (x, z) => [(x+HALF)*s, (z+HALF)*s];
+  const toM = (x, z) => [(x-MX0)*s, (z-MZ0)*s];
   mctx.lineWidth = Math.max(1, w/176);
-  ZONES.forEach(z => {
-    const [mx, my] = toM(z.x, z.z), r = z.R*s;
-    mctx.strokeStyle = z === ST.activeZone ? '#f2f2f2' : '#8a8a8a';
-    mctx.strokeRect(mx - r*.7, my - r*.7, r*1.4, r*1.4);
-    mctx.fillStyle = z === ST.activeZone ? '#f2f2f2' : '#cfcfcf';
-    mctx.font = `500 ${Math.round(8*w/176)}px "JetBrains Mono", monospace`;
-    mctx.fillText(z.key, mx + r*.8, my - r*.8);
+  REGIONS.forEach(r => {
+    const on = r === ST.activeRegion;
+    mctx.strokeStyle = on ? '#f2f2f2' : '#6a6a6a'; mctx.beginPath();
+    r.poly.forEach(([x, z], i) => { const [mx, my] = toM(x, z); i ? mctx.lineTo(mx, my) : mctx.moveTo(mx, my); });
+    mctx.closePath(); mctx.stroke();
+    const [mx, my] = toM(r.x, r.z), q = 3*mctx.lineWidth;
+    mctx.fillStyle = on ? '#f2f2f2' : '#cfcfcf'; mctx.strokeRect(mx-q, my-q, q*2, q*2);
+    mctx.font = `500 ${Math.round(8*w/176)}px "JetBrains Mono", monospace`; mctx.fillText(r.key, mx + q*1.4, my - q*1.2);
   });
+  mctx.fillStyle = '#9a9a9a';
+  BUILDINGS.forEach(b => { const [mx, my] = toM(b.x, b.z), q = mctx.lineWidth; mctx.fillStyle = b === ST.focusB ? '#f2f2f2' : '#8a8a8a'; mctx.fillRect(mx-q*.6, my-q*.6, q*1.2, q*1.2); });
   const corners = [[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b]) => toM(...groundAt(a,b)));
   mctx.strokeStyle = 'rgba(242,242,242,.9)'; mctx.beginPath();
   corners.forEach(([x,y], i) => i ? mctx.lineTo(x,y) : mctx.moveTo(x,y)); mctx.closePath(); mctx.stroke();
@@ -109,10 +124,8 @@ function drawMini(){
 }
 mini.addEventListener('click', e => {
   const r = mini.getBoundingClientRect();
-  const x = (e.clientX - r.left)/r.width*S - HALF, z = (e.clientY - r.top)/r.height*S - HALF;
-  stopTour();
-  const zn = zoneAt(x, z);
-  if (zn) flyToZone(zn); else flyTo(clamp(x,-LIM,LIM), clamp(z,-LIM,LIM), Math.min(cam.deff, 220));
+  const x = MX0 + (e.clientX - r.left)/r.width*MW, z = MZ0 + (e.clientY - r.top)/r.height*MW;
+  stopTour(); if (ST.focusWant) return;
+  const L = limitToReach(x, z);
+  flyTo(L.x, L.z, Math.min(cam.deff, 220));
 });
-
-export {secNav, openPaletteFn, crumbs, crumbKey, renderCrumbs, tf, tick, mini, mctx, MRES, miniBase, sizeMini, v3, groundAt, drawMini};

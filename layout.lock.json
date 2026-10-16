@@ -1,0 +1,83 @@
+{
+ "version": 1,
+ "buildings": {
+  "not-about": {
+   "region": "hub",
+   "k": 0,
+   "x": -23.9,
+   "z": 10.7
+  },
+  "blg-dither": {
+   "region": "blogs",
+   "k": 0,
+   "x": -130.4,
+   "z": -171
+  },
+  "blg-ring": {
+   "region": "blogs",
+   "k": 1,
+   "x": -94,
+   "z": -207.3
+  },
+  "blg-bbs-space": {
+   "region": "blogs",
+   "k": 2,
+   "x": -96.4,
+   "z": -152.7
+  },
+  "blg-rustd": {
+   "region": "blogs",
+   "k": 3,
+   "x": -131.4,
+   "z": -198.2
+  },
+  "blg-hex": {
+   "region": "blogs",
+   "k": 4,
+   "x": -74.8,
+   "z": -188.2
+  },
+  "blg-fwidth": {
+   "region": "blogs",
+   "k": 5,
+   "x": -124.8,
+   "z": -155
+  },
+  "blg-noscroll": {
+   "region": "blogs",
+   "k": 6,
+   "x": -108.7,
+   "z": -216.3
+  },
+  "prj-oldbot": {
+   "region": "projects",
+   "k": 0,
+   "x": -236,
+   "z": 8.8
+  },
+  "prj-bbs": {
+   "region": "projects",
+   "k": 1,
+   "x": -196.7,
+   "z": -24.9
+  },
+  "prj-zynx": {
+   "region": "projects",
+   "k": 2,
+   "x": -201.6,
+   "z": 27.6
+  },
+  "prj-map": {
+   "region": "projects",
+   "k": 3,
+   "x": -235.9,
+   "z": -15.3
+  },
+  "prj-x": {
+   "region": "projects",
+   "k": 4,
+   "x": -178.7,
+   "z": -6
+  }
+ }
+}

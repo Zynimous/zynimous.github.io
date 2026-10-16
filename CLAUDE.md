@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-"Zynimous Sandbox": a single-page, interactive 3D topographic-map homepage for zynimous.dev. The site's sections (HQ, Projects, About, Blogs) are "sectors" on a procedurally generated terrain; their entries are "intel files" that open in a side panel. UI copy is Traditional Chinese (`lang="zh-Hant"`) mixed with military/HUD-style English labels. Current content is placeholder (marked 示範內容).
+"Zynimous Sandbox": a single-page, interactive 3D topographic-map homepage for zynimous.dev. Every content file (article, project, note) is one **building** on a procedurally generated, endless terrain; buildings live in **regions** (Hub, Blog District, Project District, …) separated by white borders. Clicking a building enters **focus mode**: low camera, background blurred/fogged, content panel on the right. The whole site is one page (History API routing); the only real navigation is a flagship project's "出境" to its product site. UI copy is Traditional Chinese (`lang="zh-Hant"`) mixed with military/HUD-style English labels. Current content is placeholder (marked 示範內容).
 
 ## Project decisions (agreed with the owner)
 
@@ -18,23 +18,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Files and running
 
-- `index.html` — page shell only: `<head>`, HUD markup, one `<script type="module" src="/src/main.js">`.
-- `src/style.css` — all styles (palette in `:root`).
-- `src/*.js` — ES modules, one per section: `core`, `state` (shared mutable `ST` object: module bindings can't be reassigned across files, so cross-file mutable state like `ST.tween`, `ST.activeZone`, `ST.curItem` lives there), `data`, `terrain`, `scene`, `labels`, `camera`, `picking`, `input`, `hud`, `intel`, `palette`, `tour`, `loop`, `boot`; `main.js` imports them in dependency order. Mind import cycles: a module that touches another's exports at top level must come after it.
-- Vite (`npm run dev` / `build` / `preview`); three.js is an npm dependency pinned to an exact version (`ColorManagement` is disabled and output is linear in `scene.js` to keep the old r128 colour look). `file://` no longer works. The dev server uses polling because the repo lives on `/mnt/c` under WSL.
-- The v2 redesign (buildings, districts, focus mode, content from Markdown) is specified in the owner's v2 spec and being implemented in phases P0–P7; P0 (this module split) is done.
+- `npm run dev` / `build` / `preview` (Vite 8, ES modules, `three` pinned to an exact version; `ColorManagement` is off and output is linear in `scene.js` to keep the old r128 colour look). No tests or linter. The dev server polls files because the repo lives on `/mnt/c` under WSL.
+- **Content:** `content/{blogs,projects,notes}/*.md` (frontmatter: id, slug, type, title, summary, date required; see `scripts/manifest.mjs` for all fields). `config/regions.yml` (regions on a hex lattice, `slot` = spiral index) and `config/model-families.yml` (category → building family). `scripts/manifest.mjs` builds the manifest (via the `virtual:manifest` module in `vite.config.js`): parses/validates markdown, lays out borders + buildings, writes `layout.lock.json` (**commit it**: first-time coordinates are frozen so existing buildings never move; deleted content keeps its reserved spot). Editing content hot-reloads the page.
+- `index.html` — shell + HUD markup. `src/style.css` — all styles (palette in `:root`).
+- Static hosting: `vite build` also emits `404.html` and `_redirects` as SPA fallbacks (GitHub Pages / Cloudflare Pages).
 
-## Architecture (the `js/` files)
+## Architecture (`src/`)
 
-Each section below is its own file (banner comment kept at top), in this order:
+`main.js` imports modules in dependency order; modules import each other explicitly (watch for import cycles: avoid touching another module's export at top level before it has evaluated). Cross-file mutable state lives in the `ST` object (`state.js`), because module bindings can't be reassigned from other files.
 
-- **DATA** — `ZONES` (sector id, hotkey `key` 1–4, world `x`/`z`, radius `R`, fort polygon side count `n`, icon) and `ITEMS` (intel files; `zone` links to a zone id, `body` is raw HTML injected via `innerHTML`). `ZONE_SUB` holds per-zone subtitle text and must be kept in sync manually when items change. Item world positions are *not* in the data — they are assigned radially around their zone in the forts code (`it.x/it.z/it.h`).
-- **TERRAIN** — deterministic value-noise fbm heightfield (`raw`), flattened into plateaus around each zone (`Hgt`), sampled into a `Float32Array` grid; `hAt(x,z)` bilinearly samples it and is the single source of truth for ground height (mesh vertices, minimap, readouts, picking). World is `S=640` units square; display meters = `h*10+120`.
-- **THREE** — terrain is one `PlaneGeometry` with a custom `ShaderMaterial` that draws contour lines via `fwidth`, plus cursor/focus glow, fog, edge fade and the radial intro reveal (`uIntro`). Forts, routes and rings are line geometry draped on terrain via `addLine`; `dashMat` creates animated dashed-line shaders, all collected in `dashMats` and ticked each frame.
-- **LABELS** — HTML overlay tags (zone cards, item cards, spot heights) projected from 3D to screen each frame. Each label has an `alpha()` function driving visibility; this is how semantic zoom works.
-- **CAMERA STATE** — camera is orbit-less: `cam {x, z, deff}` (target point + effective distance, clamped `D_MIN..D_MAX`). `flyTo`/`flyToZone`/`flyWorld` create a `tween`; any user input cancels the tween and the auto tour (`userInput`).
-- **INPUT / PALETTE / TOUR** — keyboard (WASD/arrows pan, Q/E zoom, 1–4 zones, 0/Esc world, T tour, Ctrl+K or `/` command palette, ←/→ step intel files while reading), pointer drag/pinch, wheel. Palette `ENTRIES` are derived from `ZONES` + `ITEMS`.
-- **LOOP** — `frame()` does everything per frame: input → tween → bounds → tour → per-zone `detail` (semantic zoom factor from camera distance & proximity; drives detail-line opacity and item-label alpha) → shader uniforms → render → label projection → HUD readouts/scale bar → minimap.
-- **BOOT** — deep links: `location.hash` may be a zone id or item id (item opens its intel panel). The loop keeps the hash updated via `history.replaceState`.
+- **world.js** — manifest wrapper: `REGIONS`, `BUILDINGS`, `BORDERS`, lookups (`regionAt` = hex cell, `nearestRegion`), `limitToReach` (rubber-band limit at the outermost borders).
+- **terrain.js** — analytic heightfield: CPU `hAt(x,z)` and the identical GLSL `HEIGHT_GLSL` (integer hash on both sides). Flat landmark pads at region centres. `hAt` is the single source of truth for ground height.
+- **scene.js** — renderer, clipmap terrain (5 nested rings re-centred on the camera, height in the vertex shader, contour lines via `fwidth` in the fragment shader, black distance fog so no edge is ever visible), `dashMat`/`addLine` helpers.
+- **buildings.js** — parametric families (block/bunker/tower/lattice/facility/citadel/hut + region landmarks), all merged into one fill mesh + one edge mesh; hover/hide driven by uniforms matched to the `aBid` vertex attribute. Edges grey-white, hover → `--signal` orange.
+- **borders.js** — border ribbons + sleepers draped on terrain, roads (dashed, also the tour path). **trainlabel.js** — label that slides along the border nearest the screen centre.
+- **signage.js** — screen-space HTML cards (board / label / dot) with priority, overlap avoidance, caps, and the "always something readable" edge arrow. **hud.js**, **palette.js**, **tour.js** — HUD, command palette, auto tour.
+- **camera.js** — explore pose (`cam` target + `deff`, elevation 50°–66° by distance, raw position `rx/rz` vs rubber-banded `x/z`) and focus pose (≈20°, building at left 40% via `setViewOffset`). **focus.js** / **panel.js** / **router.js** / **render.js** — focus-mode state, content panel templates, History API routing (`/`, `/blogs`, `/blogs/<slug>`, `/projects/<slug>`, `/about`, …), and the half-res blur/fog compositing pass.
+- **loop.js** — per-frame orchestration. **boot.js** — initial URL → camera/focus state, panel button wiring.
 
-Conventions: `$` is a `getElementById` helper; reading mode is the `body.reading` class; `prefers-reduced-motion` (`reduce`) skips the boot animation and makes tweens instant — preserve that when adding animation.
+Conventions: `$` is a `getElementById` helper; reading/focus mode is `body.reading` (panel open) and `body.focus` (labels hidden); `prefers-reduced-motion` (`reduce`) skips boot animation and makes tweens/blends instant — preserve that when adding animation.

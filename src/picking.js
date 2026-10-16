@@ -1,7 +1,12 @@
+import * as THREE from 'three';
+import {ST} from './state.js';
+import {ZONES} from './data.js';
+import {HALF, hAt} from './terrain.js';
+import {camera} from './scene.js';
 /* ================= PICKING ================= */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function pick(cx, cy){
-  ndc.set(cx/Wd*2-1, -(cy/Hd)*2+1);
+  ndc.set(cx/ST.Wd*2-1, -(cy/ST.Hd)*2+1);
   ray.setFromCamera(ndc, camera);
   const o = ray.ray.origin, d = ray.ray.direction;
   let prev = 0;
@@ -20,3 +25,5 @@ function pick(cx, cy){
   return null;
 }
 function zoneAt(x, z){ return ZONES.find(zn => Math.hypot(x-zn.x, z-zn.z) < zn.R*1.25) || null; }
+
+export {ray, ndc, pick, zoneAt};

@@ -119,3 +119,5 @@ place  L3 @ (2,5)  I4 @ (0,1)  O2 @ (6,6)</pre>
 ];
 ZONES.forEach(z => { z.items = ITEMS.filter(i => i.zone === z.id); });
 const ZONE_SUB = {hq:'識別 · 裝備 · 任務', projects:'4 份檔案 · 1 機密', about:'2 個頻道', blogs:'4 篇 · 最近 10/15'};
+
+export {ICONS, ZONES, ZMAP, ITEMS, ZONE_SUB};

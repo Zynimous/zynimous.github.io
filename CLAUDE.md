@@ -18,12 +18,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Files and running
 
-- `index.html` — page shell only: `<head>`, HUD markup, then `<script>` tags in dependency order.
-- `css/style.css` — all styles (palette in `:root`).
-- `js/*.js` — classic (non-module) scripts, one per section, loaded in this order: `core` (reduce, THREE check, `$`), `data`, `terrain`, `scene`, `labels`, `camera`, `picking`, `input`, `hud`, `intel`, `palette`, `tour`, `loop`, `boot`. They share one global lexical scope (top-level `const`/`let`/`function`), so no IIFE; keep top-level names unique across files and respect load order. Classic scripts (not ES modules) are used deliberately so opening `index.html` from `file://` still works. No build step, package manager, tests or linter.
-- `three.min.js` — vendored Three.js **r128** UMD build (global `THREE`). Code relies on r128-era APIs (e.g. `ShaderMaterial` `extensions: {derivatives:true}`, `gl_FragColor`); check compatibility before upgrading.
-
-Run by serving the directory statically, e.g. `python3 -m http.server 8000`, then open http://localhost:8000. Opening the file directly also works since three.js is loaded via a relative `<script src>`. Google Fonts are the only external dependency.
+- `index.html` — page shell only: `<head>`, HUD markup, one `<script type="module" src="/src/main.js">`.
+- `src/style.css` — all styles (palette in `:root`).
+- `src/*.js` — ES modules, one per section: `core`, `state` (shared mutable `ST` object: module bindings can't be reassigned across files, so cross-file mutable state like `ST.tween`, `ST.activeZone`, `ST.curItem` lives there), `data`, `terrain`, `scene`, `labels`, `camera`, `picking`, `input`, `hud`, `intel`, `palette`, `tour`, `loop`, `boot`; `main.js` imports them in dependency order. Mind import cycles: a module that touches another's exports at top level must come after it.
+- Vite (`npm run dev` / `build` / `preview`); three.js is an npm dependency pinned to an exact version (`ColorManagement` is disabled and output is linear in `scene.js` to keep the old r128 colour look). `file://` no longer works. The dev server uses polling because the repo lives on `/mnt/c` under WSL.
+- The v2 redesign (buildings, districts, focus mode, content from Markdown) is specified in the owner's v2 spec and being implemented in phases P0–P7; P0 (this module split) is done.
 
 ## Architecture (the `js/` files)
 

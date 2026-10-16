@@ -1,3 +1,9 @@
+import {$} from './core.js';
+import {ZONES, ITEMS, ZMAP} from './data.js';
+import {canvas} from './scene.js';
+import {flyToZone, flyWorld} from './camera.js';
+import {openIntel, closeIntel} from './intel.js';
+import {toggleTour, stopTour} from './tour.js';
 /* ================= PALETTE ================= */
 const palEl = $('palette'), palQ = $('pal-q'), palList = $('pal-list');
 const ENTRIES = [
@@ -28,3 +34,5 @@ palQ.addEventListener('keydown', e => {
 });
 palList.addEventListener('click', e => { const b = e.target.closest('.pr'); if (b) runPal(+b.dataset.i); });
 palEl.addEventListener('click', e => { if (e.target === palEl) closePalette(); });
+
+export {palEl, palQ, palList, ENTRIES, palSel, palRows, renderPal, openPalette, closePalette, runPal};

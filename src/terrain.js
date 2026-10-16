@@ -1,3 +1,4 @@
+import {ZONES} from './data.js';
 /* ================= TERRAIN ================= */
 const S = 640, HALF = S/2, N = 321, CELL = S/(N-1);
 function hash(ix, iy){ let h = (Math.imul(ix,374761393) + Math.imul(iy,668265263))|0; h = Math.imul(h ^ (h>>>13), 1274126177); h ^= h>>>16; return (h>>>0)/4294967296; }
@@ -34,3 +35,5 @@ function hAt(x, z){
 }
 const meters = h => Math.round(h*10 + 120);
 const gridRef = v => String(Math.max(0, Math.round((v+HALF)*10))).padStart(4,'0');
+
+export {S, HALF, N, CELL, hash, vnoise, fbm, raw, Hgt, grid, hAt, meters, gridRef};

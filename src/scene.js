@@ -1,7 +1,13 @@
+import * as THREE from 'three';
+import {reduce} from './core.js';
+import {ZONES, ZMAP} from './data.js';
+import {S, HALF, N, CELL, grid, hAt} from './terrain.js';
 /* ================= THREE ================= */
 const canvas = document.getElementById('scene');
+THREE.ColorManagement.enabled = false; // keep r128-era colour behaviour (ShaderMaterial colours are raw)
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 renderer.setClearColor(0x000000, 1);
 const scene = new THREE.Scene();
 const FOV = 42;
@@ -18,7 +24,6 @@ const terrainUniforms = {
 };
 const terrainMat = new THREE.ShaderMaterial({
   uniforms: terrainUniforms,
-  extensions: {derivatives:true},
   vertexShader: `varying vec3 vW; varying float vH0;
     void main(){ vec4 w = modelMatrix*vec4(position,1.0); vW = w.xyz; vH0 = position.y; gl_Position = projectionMatrix*viewMatrix*w; }`,
   fragmentShader: `uniform vec3 uLine; uniform vec2 uCursor; uniform float uCursorOn; uniform vec2 uFocus; uniform float uFocusAmt; uniform float uIntro; uniform float uZoom;
@@ -141,3 +146,5 @@ const peaks = [];
   for (const p of peaks){ if (chosen.every(c => Math.hypot(c.x-p.x, c.z-p.z) > 80)) chosen.push(p); if (chosen.length >= 6) break; }
   peaks.length = 0; peaks.push(...chosen);
 }
+
+export {canvas, renderer, scene, FOV, camera, geo, terrainUniforms, terrainMat, dashMats, dashMat, addLine, polar, route, tourMat, spokeMat, peaks};

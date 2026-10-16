@@ -1,8 +1,13 @@
+import {ST} from './state.js';
+import {$} from './core.js';
+import {ZMAP} from './data.js';
+import {canvas} from './scene.js';
+import {flyToZone} from './camera.js';
+import {stopTour} from './tour.js';
 /* ================= INTEL ================= */
 const intel = $('intel');
-let curItem = null;
 function openIntel(it){
-  curItem = it;
+  ST.curItem = it;
   const z = ZMAP[it.zone];
   $('i-file').textContent = it.code;
   $('i-kicker').textContent = `${z.code} · ${z.name} · ${it.code}`;
@@ -20,13 +25,13 @@ function openIntel(it){
 }
 function closeIntel(){
   document.body.classList.remove('reading'); intel.setAttribute('aria-hidden', 'true');
-  const it = curItem; curItem = null;
+  const it = ST.curItem; ST.curItem = null;
   try { history.replaceState(null, '', '#' + (it ? it.zone : '')); } catch(_){}
   canvas.focus({preventScroll:true});
 }
 function stepIntel(dir){
-  if (!curItem) return;
-  const list = ZMAP[curItem.zone].items, i = list.indexOf(curItem);
+  if (!ST.curItem) return;
+  const list = ZMAP[ST.curItem.zone].items, i = list.indexOf(ST.curItem);
   openIntel(list[(i + dir + list.length) % list.length]);
 }
 $('i-close').addEventListener('click', closeIntel);
@@ -40,3 +45,5 @@ $('i-body').addEventListener('click', e => {
   } catch(_){ selectCode(b); done(false); }
 });
 function selectCode(b){ const c = b.parentElement.querySelector('code'); const r = document.createRange(); r.selectNodeContents(c); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+
+export {intel, openIntel, closeIntel, stepIntel, selectCode};

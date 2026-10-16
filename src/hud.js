@@ -1,3 +1,14 @@
+import * as THREE from 'three';
+import {ST} from './state.js';
+import {reduce, $} from './core.js';
+import {ZONES, ZMAP} from './data.js';
+import {S, HALF, hAt} from './terrain.js';
+import {camera} from './scene.js';
+import {clamp, cam, LIM, flyTo, flyToZone, flyWorld} from './camera.js';
+import {ray, ndc, zoneAt} from './picking.js';
+import {closeIntel} from './intel.js';
+import {openPalette} from './palette.js';
+import {toggleTour, stopTour} from './tour.js';
 /* ================= HUD ================= */
 const secNav = $('hud-left');
 ZONES.forEach(z => {
@@ -84,9 +95,9 @@ function drawMini(){
   mctx.lineWidth = Math.max(1, w/176);
   ZONES.forEach(z => {
     const [mx, my] = toM(z.x, z.z), r = z.R*s;
-    mctx.strokeStyle = z === activeZone ? '#f2f2f2' : '#8a8a8a';
+    mctx.strokeStyle = z === ST.activeZone ? '#f2f2f2' : '#8a8a8a';
     mctx.strokeRect(mx - r*.7, my - r*.7, r*1.4, r*1.4);
-    mctx.fillStyle = z === activeZone ? '#f2f2f2' : '#cfcfcf';
+    mctx.fillStyle = z === ST.activeZone ? '#f2f2f2' : '#cfcfcf';
     mctx.font = `500 ${Math.round(8*w/176)}px "JetBrains Mono", monospace`;
     mctx.fillText(z.key, mx + r*.8, my - r*.8);
   });
@@ -103,3 +114,5 @@ mini.addEventListener('click', e => {
   const zn = zoneAt(x, z);
   if (zn) flyToZone(zn); else flyTo(clamp(x,-LIM,LIM), clamp(z,-LIM,LIM), Math.min(cam.deff, 220));
 });
+
+export {secNav, openPaletteFn, crumbs, crumbKey, renderCrumbs, tf, tick, mini, mctx, MRES, miniBase, sizeMini, v3, groundAt, drawMini};

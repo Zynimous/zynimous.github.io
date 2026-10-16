@@ -1,10 +1,17 @@
+import {ST} from './state.js';
+import {reduce, $} from './core.js';
+import {ZMAP, ITEMS} from './data.js';
+import {canvas, terrainUniforms} from './scene.js';
+import {cam, updateCamera} from './camera.js';
+import {openIntel} from './intel.js';
+import {frame} from './loop.js';
 /* ================= BOOT ================= */
 const startHash = (location.hash || '').slice(1);
 const startItem = ITEMS.find(i => i.id === startHash), startZone = ZMAP[startHash];
 if (startItem){ const z = ZMAP[startItem.zone]; cam.x = z.x; cam.z = z.z + z.R*.12; cam.deff = 86; }
 else if (startZone){ cam.x = startZone.x; cam.z = startZone.z + startZone.R*.12; cam.deff = 86; }
 updateCamera();
-requestAnimationFrame(t => { last = t; frame(t); });
+requestAnimationFrame(t => { ST.last = t; frame(t); });
 
 const bootLines = [...document.querySelectorAll('#boot-box div')];
 if (reduce){ $('boot').classList.add('gone'); }
@@ -15,3 +22,5 @@ else {
 }
 if (startItem) setTimeout(() => openIntel(startItem), reduce ? 50 : 1200);
 canvas.focus({preventScroll:true});
+
+export {startHash, startItem, startZone, bootLines};

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Zynimous Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=JetBrains+Mono:wght@400;500&family=Prompt:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+<canvas id="scene" tabindex="0" aria-label="作戰沙盒地圖：WASD 或拖曳移動，滾輪縮放"></canvas>
+<div id="reticle"></div>
+<div id="labels"></div>
+
+<div class="hud" id="hud-tl">
+  <div class="logo" id="logo">ZYNIMOUS</div>
+  <div class="sublogo">OPERATIONAL MAP // SANDBOX v0.1</div>
+  <nav class="crumbs" id="crumbs" aria-label="目前位置"></nav>
+</div>
+
+<dl class="hud" id="hud-tr">
+  <dt>TGT</dt><dd id="r-tgt">E 0000 · N 0000</dd>
+  <dt>CUR</dt><dd id="r-cur">—</dd>
+  <dt>ELEV</dt><dd id="r-elev">—</dd>
+  <dt>ALT</dt><dd id="r-alt">—</dd>
+  <dt>TPE</dt><dd id="r-time">--:--:--</dd>
+</dl>
+
+<nav class="hud" id="hud-left" aria-label="區塊">
+  <div class="sec-h">SECTORS</div>
+</nav>
+
+<div class="hud" id="hud-br">
+  <div class="cap"><span>OVERVIEW</span><span>N ↑</span></div>
+  <canvas id="mini" width="176" height="176" aria-label="小地圖，點擊跳轉"></canvas>
+</div>
+
+<div class="hud" id="hud-bl">
+  <div class="btns">
+    <button class="btn" id="b-tour" type="button"><kbd>T</kbd>自動巡航</button>
+    <button class="btn" id="b-pal" type="button"><kbd>Ctrl K</kbd>指令</button>
+    <button class="btn" id="b-world" type="button"><kbd>Esc</kbd>全圖</button>
+  </div>
+  <div class="hint">WASD / 拖曳 移動 · 滾輪 Q E 縮放 · 1–4 跳轉區塊</div>
+  <div class="scale"><i id="scale-bar"></i><span id="scale-txt">500 m</span></div>
+</div>
+
+<div class="hud" id="tourchip" hidden><span id="tour-txt">AUTO TOUR 1/4</span><button type="button" id="tour-stop">STOP</button></div>
+
+<div id="scrim"></div>
+<aside id="intel" aria-hidden="true" aria-labelledby="i-title">
+  <div class="i-head"><span>INTEL REPORT · <b id="i-file">FILE</b></span><button class="i-close" id="i-close" type="button">ESC ✕</button></div>
+  <div class="i-class">UNCLASSIFIED // 示範內容 // UNCLASSIFIED</div>
+  <div class="i-scroll" id="i-scroll">
+    <div class="i-kicker" id="i-kicker">SEC</div>
+    <h2 id="i-title">Title</h2>
+    <dl class="i-meta" id="i-meta"></dl>
+    <div class="i-body" id="i-body"></div>
+  </div>
+  <div class="i-foot"><span>完整頁面 <b id="i-path">/</b></span><span id="i-nav">← → 切換檔案</span></div>
+</aside>
+
+<div id="palette" hidden>
+  <div class="pal" role="dialog" aria-label="指令面板">
+    <div class="pal-in"><span>&gt;</span><input id="pal-q" type="text" placeholder="輸入區塊或檔案名稱…" autocomplete="off" spellcheck="false"></div>
+    <div id="pal-list" role="listbox"></div>
+    <div class="pal-foot"><span>↑↓ 選擇</span><span>Enter 前往</span><span>Esc 關閉</span></div>
+  </div>
+</div>
+
+<div id="boot"><div class="boot-box" id="boot-box">
+  <div><span>UPLINK</span><b>ESTABLISHED</b></div>
+  <div><span>TERRAIN MESH</span><b id="boot-verts">—</b></div>
+  <div><span>SECTORS</span><b>4 ONLINE</b></div>
+  <div><span>OPERATOR</span><b>ZYNIMOUS</b></div>
+</div></div>
+
+<script src="three.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/labels.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/picking.js"></script>
+<script src="js/input.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/intel.js"></script>
+<script src="js/palette.js"></script>
+<script src="js/tour.js"></script>
+<script src="js/loop.js"></script>
+<script src="js/boot.js"></script>
+
+</body>
+</html>

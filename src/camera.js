@@ -18,11 +18,12 @@ export const D_MIN = 55, D_MAX = 520, FOCUS_EL = 20*Math.PI/180;
 cam.rx = cam.x; cam.rz = cam.z;
 ST.camTy = hAt(cam.x, cam.z); // focus height: eased only during fly-to, held during free movement
 
-export function flyTo(x, z, deff, ms = 850){
-  ST.tween = {fx:cam.x, fz:cam.z, fd:cam.deff, tx:x, tz:z, td:clamp(deff, D_MIN, D_MAX), fy:ST.camTy, ty:hAt(x, z), t0:performance.now(), dur: reduce ? 1 : ms};
+export function flyTo(x, z, deff, ms = 850, y = hAt(x, z)){
+  ST.tween = {fx:cam.x, fz:cam.z, fd:cam.deff, tx:x, tz:z, td:clamp(deff, D_MIN, D_MAX), fy:ST.camTy, ty:y, t0:performance.now(), dur: reduce ? 1 : ms};
 }
 export const REGION_VIEW = 125;
-export const flyToRegion = (r, deff = REGION_VIEW) => flyTo(r.x, r.z - 24, deff);
+// aim dead-centre at the region's landmark (mid-height), not the ground in front of it
+export const flyToRegion = (r, deff = REGION_VIEW) => flyTo(r.x, r.z, deff, 850, r.landmarkTop != null ? r.h + (r.landmarkTop - r.h)*.45 : hAt(r.x, r.z));
 export const flyWorld = () => flyTo(WORLD_VIEW.x, WORLD_VIEW.z, WORLD_VIEW.deff);
 export const flyToBuilding = (b, deff = 70) => flyTo(b.x, b.z + 4, deff);
 

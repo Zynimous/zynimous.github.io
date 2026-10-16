@@ -58,7 +58,7 @@ const miniBase = document.createElement('canvas'); miniBase.width = miniBase.hei
     const line = (r !== c || d !== c);
     const major = line && (Math.floor(h/20) !== Math.floor((x<MRES-1?hm[y*MRES+x+1]:h)/20) || Math.floor(h/20) !== Math.floor((y<MRES-1?hm[(y+1)*MRES+x]:h)/20));
     const k = (y*MRES+x)*4, base = 6 + Math.max(0,h)*.12;
-    if (line){ const a = major ? .85 : .42; img.data[k] = 255*a + base*(1-a); img.data[k+1] = 106*a + base*(1-a); img.data[k+2] = 26*a + base*(1-a); }
+    if (line){ const a = major ? .85 : .42; img.data[k] = img.data[k+1] = img.data[k+2] = 207*a + base*(1-a); }
     else { img.data[k] = img.data[k+1] = img.data[k+2] = base; }
     img.data[k+3] = 255;
   }

@@ -64,6 +64,61 @@ function readContent(root){
   return items;
 }
 
+// ---- decals: static text / image objects placed in the world (config/decals.yml, optional)
+const DECAL_FACES = ['ground', 'upright'], DECAL_COLORS = ['ink', 'ash', 'mute', 'signal'], DECAL_FONTS = ['display', 'body', 'mono'];
+function readDecals(root, byId){
+  const p = path.join(root, 'config/decals.yml');
+  if (!fs.existsSync(p)) return [];
+  const list = loadYaml(p)?.decals || [], errors = [], seen = new Set();
+  const out = list.map((d, i) => {
+    const tag = `config/decals.yml: ${d.id || '#' + i}`;
+    if (!d.id) errors.push(`${tag}: missing id`);
+    else if (seen.has(d.id)) errors.push(`${tag}: duplicate id`);
+    seen.add(d.id);
+    if ((d.text == null) === (d.image == null)) errors.push(`${tag}: needs exactly one of text / image`);
+    const reg = d.region ? byId[d.region] : null;
+    if (d.region && !reg) errors.push(`${tag}: unknown region "${d.region}"`);
+    const face = d.face || 'ground', color = d.color || 'ink', font = d.font || 'display';
+    if (!DECAL_FACES.includes(face)) errors.push(`${tag}: bad face ${face}`);
+    if (!DECAL_COLORS.includes(color)) errors.push(`${tag}: bad color ${color}`);
+    if (!DECAL_FONTS.includes(font)) errors.push(`${tag}: bad font ${font}`);
+    const text = d.text != null ? String(d.text) : null;
+    return {
+      id: String(d.id), kind: text != null ? 'text' : 'image', text, image: d.image || null,
+      x: r1((reg ? reg.x : 0) + (+d.x || 0)), z: r1((reg ? reg.z : 0) + (+d.z || 0)),
+      size: +d.size || (text != null ? 6 : 24), rot: +d.rot || 0, face, color, font,
+      weight: d.weight || (font === 'display' ? 700 : 500), opacity: d.opacity ?? 1
+    };
+  });
+  if (errors.length) throw new Error('Decal errors:\n  ' + errors.join('\n  '));
+  return out;
+}
+
+// ---- boards: markdown notes on a backing plate, placed in the world (content/boards/*.md, optional)
+function readBoards(root, byId){
+  const d = path.join(root, 'content/boards');
+  if (!fs.existsSync(d)) return [];
+  const errors = [], seen = new Set(), out = [];
+  for (const f of fs.readdirSync(d).filter(n => n.endsWith('.md')).sort()){
+    const tag = `content/boards/${f}`;
+    const {data, content} = matter(fs.readFileSync(path.join(d, f), 'utf8'));
+    if (!data.id){ errors.push(`${tag}: missing id`); continue; }
+    if (seen.has(data.id)) errors.push(`${tag}: duplicate id ${data.id}`);
+    seen.add(data.id);
+    const reg = data.region ? byId[data.region] : null;
+    if (data.region && !reg) errors.push(`${tag}: unknown region "${data.region}"`);
+    const face = data.face || 'ground';
+    if (!DECAL_FACES.includes(face)) errors.push(`${tag}: bad face ${face}`);
+    out.push({
+      id: String(data.id), title: data.title || null, kicker: data.kicker || null,
+      x: r1((reg ? reg.x : 0) + (+data.x || 0)), z: r1((reg ? reg.z : 0) + (+data.z || 0)),
+      width: +data.width || 60, px: +data.px || 440, rot: +data.rot || 0, face, html: renderBody(content).html
+    });
+  }
+  if (errors.length) throw new Error('Board errors:\n  ' + errors.join('\n  '));
+  return out;
+}
+
 function toDate(v){ return v instanceof Date ? v.toISOString().slice(0, 10) : String(v); }
 
 function renderBody(content){
@@ -214,7 +269,8 @@ export function buildManifest(root){
   const buildings = raw;
   const latest = buildings.filter(b => b.type !== 'note').slice().sort((a, b) => b.date.localeCompare(a.date)).map(b => b.id);
   const extent = regions.flatMap(r => r.poly).reduce((e, [x, z]) => ({minX: Math.min(e.minX, x), maxX: Math.max(e.maxX, x), minZ: Math.min(e.minZ, z), maxZ: Math.max(e.maxZ, z)}), {minX: 1e9, maxX: -1e9, minZ: 1e9, maxZ: -1e9});
-  return {version: 1, generated: now, spacing: D, regions, borders, buildings, latest, extent};
+  const decals = readDecals(root, byId), boards = readBoards(root, byId);
+  return {version: 1, generated: now, spacing: D, regions, borders, buildings, decals, boards, latest, extent};
 }
 
 export function contentFiles(root){

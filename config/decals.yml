@@ -1,0 +1,16 @@
+# Decals: static text or images placed in the world (not UI, not clickable). See src/decals.js.
+#   id       unique
+#   text     string (use \n for line breaks)   -- or --   image: path under public/ (or an absolute URL)
+#   region   optional; when set, x/z are offsets from that region's centre, otherwise world coordinates
+#   x, z     position (north is -z)
+#   size     text: letter height in world units (default 6); image: width in world units (default 24)
+#   rot      degrees (default 0 = reads upright from the default camera)
+#   face     ground (painted on the terrain, default) | upright (standing panel)
+#   color    ink | ash | mute | signal (text only, default ink)
+#   font     display | body | mono (default display); weight optional
+#   opacity  0..1 (default 1)
+decals:
+  - {id: hub-callsign, region: hub, x: 0, z: 62, text: ZYNIMOUS, size: 9, color: ash, opacity: .85}
+  - {id: hub-grid, region: hub, x: 0, z: 73, text: "SANDBOX · 示範內容", size: 3, font: mono, color: mute}
+  - {id: blogs-stamp, region: blogs, x: 58, z: 40, text: "FIELD\nNOTES", size: 6, rot: 14, color: mute, opacity: .7}
+  # - {id: prj-poster, region: projects, x: 0, z: 60, image: decals/poster.png, size: 30, face: upright}

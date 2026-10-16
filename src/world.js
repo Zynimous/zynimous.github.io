@@ -5,6 +5,8 @@ export const M = manifest;
 export const REGIONS = manifest.regions;
 export const BUILDINGS = manifest.buildings;
 export const BORDERS = manifest.borders;
+export const DECALS = manifest.decals || [];
+export const BOARDS = manifest.boards || [];
 export const RMAP = Object.fromEntries(REGIONS.map(r => [r.id, r]));
 export const BMAP = Object.fromEntries(BUILDINGS.map(b => [b.id, b]));
 export const BPATH = Object.fromEntries(BUILDINGS.map(b => [b.path, b]));

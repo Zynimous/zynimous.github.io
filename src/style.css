@@ -25,6 +25,16 @@ button:focus-visible{outline:1px solid var(--ash);outline-offset:2px}
 /* ---------- signage: fixed-size name labels ---------- */
 #labels{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;transition:opacity .4s}
 body.focus #labels{opacity:0}
+/* boards: markdown notes placed on the map (CSS3D layer under the labels, see src/boards.js) */
+#boards{position:fixed;inset:0;pointer-events:none;z-index:1;transition:opacity .4s}
+body.focus #boards{opacity:0}
+.board{background:rgba(7,7,7,.93);border:1px solid var(--rule-hi);border-top:2px solid var(--ash);padding:22px 26px 10px;color:var(--ash)}
+.board header{margin:0 0 16px;padding-bottom:14px;border-bottom:1px solid var(--rule)}
+.bd-k{font:500 10px/1 var(--f-mono);letter-spacing:.16em;color:var(--mute);margin-bottom:9px}
+.board h3{margin:0;font:700 17px/1.35 var(--f-display);letter-spacing:.06em;color:var(--ink)}
+.bd-body{font-size:14px;line-height:1.75;max-width:none}
+.bd-body>:first-child{margin-top:0}
+.bd-body a{pointer-events:auto}
 .tag{position:absolute;left:0;top:0;will-change:transform,opacity;opacity:0;transition:opacity .35s}
 .tag.on{opacity:1}
 .tag .dot{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border:1px solid var(--ash);background:var(--void);transform:rotate(45deg)}
@@ -224,5 +234,5 @@ body.reading #panel{transform:none;opacity:1}
   #tourchip{top:auto;bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 }
 @media (prefers-reduced-motion:reduce){
-  #panel,#scrim,.hud,#boot,.tag,#fade{transition:none}
+  #panel,#scrim,.hud,#boot,.tag,#fade,#boards{transition:none}
 }

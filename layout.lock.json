@@ -10,73 +10,73 @@
   "blg-dither": {
    "region": "blogs",
    "k": 0,
-   "x": -130.4,
-   "z": -171
+   "x": -207.4,
+   "z": -304.4
   },
   "blg-ring": {
    "region": "blogs",
    "k": 1,
-   "x": -94,
-   "z": -207.3
+   "x": -171,
+   "z": -340.7
   },
   "blg-bbs-space": {
    "region": "blogs",
    "k": 2,
-   "x": -96.4,
-   "z": -152.7
+   "x": -173.4,
+   "z": -286.1
   },
   "blg-rustd": {
    "region": "blogs",
    "k": 3,
-   "x": -131.4,
-   "z": -198.2
+   "x": -208.4,
+   "z": -331.6
   },
   "blg-hex": {
    "region": "blogs",
    "k": 4,
-   "x": -74.8,
-   "z": -188.2
+   "x": -151.8,
+   "z": -321.6
   },
   "blg-fwidth": {
    "region": "blogs",
    "k": 5,
-   "x": -124.8,
-   "z": -155
+   "x": -201.8,
+   "z": -288.4
   },
   "blg-noscroll": {
    "region": "blogs",
    "k": 6,
-   "x": -108.7,
-   "z": -216.3
+   "x": -185.7,
+   "z": -349.7
   },
   "prj-oldbot": {
    "region": "projects",
    "k": 0,
-   "x": -236,
+   "x": -390,
    "z": 8.8
   },
   "prj-bbs": {
    "region": "projects",
    "k": 1,
-   "x": -196.7,
+   "x": -350.7,
    "z": -24.9
   },
   "prj-zynx": {
    "region": "projects",
    "k": 2,
-   "x": -201.6,
+   "x": -355.6,
    "z": 27.6
   },
   "prj-map": {
    "region": "projects",
    "k": 3,
-   "x": -235.9,
+   "x": -389.9,
    "z": -15.3
   },
   "prj-x": {
    "region": "projects",
    "k": 4,
-   "x": -178.7,
+   "x": -332.7,
    "z": -6
   }
  }

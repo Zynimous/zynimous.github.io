@@ -14,6 +14,7 @@ function manifestPlugin(){
       if (id !== RID) return null;
       this.addWatchFile(path.join(ROOT, 'config/regions.yml'));
       this.addWatchFile(path.join(ROOT, 'config/model-families.yml'));
+      this.addWatchFile(path.join(ROOT, 'config/decals.yml'));
       return 'export default ' + JSON.stringify(buildManifest(ROOT));
     },
     // SPA fallbacks for static hosts: GitHub Pages serves 404.html, Cloudflare Pages reads _redirects.

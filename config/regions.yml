@@ -1,6 +1,6 @@
 # Regions sit on a hex lattice (slot = spiral index, 0 is the origin). New regions only
 # take the next free slot, so the map grows outward and existing regions never move.
-spacing: 210
+spacing: 364
 regions:
   - {id: hub,      slot: 0, name: HUB,              zh: 樞紐,   code: HUB, types: [note],    landmark: spire}
   - {id: blogs,    slot: 1, name: BLOG DISTRICT,    zh: 文章區, code: BLG, types: [article], landmark: archive}

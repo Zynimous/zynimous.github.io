@@ -13,6 +13,7 @@ import {setHover, buildingMats} from './buildings.js';
 import {focusGoal} from './focus.js';
 import {render} from './render.js';
 import {updateSignage} from './signage.js';
+import {updateBoards} from './boards.js';
 import {syncRegionUrl} from './router.js';
 
 ST.last = performance.now();
@@ -106,6 +107,7 @@ export function frame(now){
   dashMats.forEach(m => m.uniforms.uTime.value = ST.time);
   buildingMats.edgeMat.uniforms.uTime.value = ST.time;
   render();
+  updateBoards();
 
   updateSignage();
 

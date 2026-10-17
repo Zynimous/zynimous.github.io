@@ -52,7 +52,7 @@ export function render(){
   renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, camera);
   renderer.setRenderTarget(null); renderer.clear();
   quadMat.uniforms.uAmt.value = amt;
-  quadMat.uniforms.uAnchor.value.set(.4 + (ST.Wd < 760 ? .1 : 0), ST.Wd < 760 ? .7 : .45);
+  quadMat.uniforms.uAnchor.value.set(ST.Wd < 760 ? .5 : .5 - S.focus.offsetX, ST.Wd < 760 ? .7 : .45); // clear spot follows the focused building
   renderer.render(quadScene, quadCam);
   setHidden(-9);
   renderer.clearDepth(); renderer.render(focusScene, camera);

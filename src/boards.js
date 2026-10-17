@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import {ST} from './state.js';
 import {$, esc} from './core.js';
 import {BOARDS} from './world.js';
+import {S} from './settings.js';
 import {hAt} from './terrain.js';
 import {camera, terrainUniforms, FOG_NEAR, FOG_FAR} from './scene.js';
 import {baseHeight} from './buildings.js';
@@ -54,7 +55,7 @@ css.domElement.addEventListener('click', e => {
 /** Per frame: distance fog + intro reveal as opacity, then the CSS3D pass. */
 export function updateBoards(){
   if (!items.length || ST.focusAmt > .98) return;
-  const R = terrainUniforms.uIntro.value * 560;
+  const R = terrainUniforms.uIntro.value * S.map.introRadius;
   for (const it of items){
     const {x, y, z} = it.o.position;
     const fog = 1 - smooth(FOG_NEAR, FOG_FAR, camera.position.distanceTo(it.o.position));

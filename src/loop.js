@@ -2,6 +2,7 @@
 import {ST} from './state.js';
 import {$, reduce} from './core.js';
 import {REGIONS, RMAP, regionAt, nearestRegion, limitToReach} from './world.js';
+import {S} from './settings.js';
 import {hAt, meters, gridRef} from './terrain.js';
 import {camera, FOV, terrainUniforms, dashMats, updateTerrain} from './scene.js';
 import {clamp, cam, D_MIN, D_MAX, flyToRegion, flyWorld, updateCamera, lerp, ease} from './camera.js';
@@ -16,6 +17,7 @@ import {updateSignage} from './signage.js';
 import {updateBoards} from './boards.js';
 import {syncRegionUrl} from './router.js';
 
+const SK = S.controls, SF = S.focus;
 ST.last = performance.now();
 export function frame(now){
   const dt = Math.min((now - ST.last)/1000, .05); ST.last = now; ST.time += dt;
@@ -23,13 +25,13 @@ export function frame(now){
 
   // keyboard
   if (keys.size && !focusing){
-    const sp = cam.deff * 1.0 * dt;
+    const sp = cam.deff * SK.keyPanSpeed * dt;
     if (keys.has('KeyW') || keys.has('ArrowUp')) cam.rz -= sp;
     if (keys.has('KeyS') || keys.has('ArrowDown')) cam.rz += sp;
     if (keys.has('KeyA') || keys.has('ArrowLeft')) cam.rx -= sp;
     if (keys.has('KeyD') || keys.has('ArrowRight')) cam.rx += sp;
-    if (keys.has('KeyQ') || keys.has('Minus')) cam.deff = clamp(cam.deff * Math.exp(dt*1.3), D_MIN, D_MAX);
-    if (keys.has('KeyE') || keys.has('Equal')) cam.deff = clamp(cam.deff * Math.exp(-dt*1.3), D_MIN, D_MAX);
+    if (keys.has('KeyQ') || keys.has('Minus')) cam.deff = clamp(cam.deff * Math.exp(dt*SK.keyZoomSpeed), D_MIN, D_MAX);
+    if (keys.has('KeyE') || keys.has('Equal')) cam.deff = clamp(cam.deff * Math.exp(-dt*SK.keyZoomSpeed), D_MIN, D_MAX);
   }
   // tween
   if (ST.tween){
@@ -42,22 +44,22 @@ export function frame(now){
   // reach limit: rubber band past the outermost borders, spring back on release
   if (!focusing){
     let L = limitToReach(cam.rx, cam.rz);
-    if (L.over > 260){ const k = 260/L.over; cam.rx = L.lx + (cam.rx - L.lx)*k; cam.rz = L.lz + (cam.rz - L.lz)*k; L = limitToReach(cam.rx, cam.rz); }
+    if (L.over > SK.reachMaxOver){ const k = SK.reachMaxOver/L.over; cam.rx = L.lx + (cam.rx - L.lx)*k; cam.rz = L.lz + (cam.rz - L.lz)*k; L = limitToReach(cam.rx, cam.rz); }
     if (!ST.drag && !keys.size && !ST.tween && L.over > .01){
-      const k = reduce ? 1 : Math.min(1, dt*5);
+      const k = reduce ? 1 : Math.min(1, dt*SK.reachSpring);
       cam.rx += (L.lx - cam.rx)*k; cam.rz += (L.lz - cam.rz)*k; L = limitToReach(cam.rx, cam.rz);
     }
     cam.x = L.x; cam.z = L.z;
   }
   // focus blend + glide between buildings
-  const rate = reduce ? 99 : 1/.95;
+  const rate = reduce ? 99 : 1/SF.blendSec;
   if (focusing){ ST.focusAmt = Math.min(1, ST.focusAmt + dt*rate); }
   else if (ST.focusAmt > 0){
     ST.focusAmt = Math.max(0, ST.focusAmt - dt*rate);
     if (ST.focusAmt === 0){ ST.focusB = null; ST.focusCur = null; }
   }
   if (ST.focusB && ST.focusCur){
-    const g = focusGoal(), k = reduce ? 1 : 1 - Math.exp(-dt*(ST.exiting ? 2.6 : 4.5));
+    const g = focusGoal(), k = reduce ? 1 : 1 - Math.exp(-dt*(ST.exiting ? 2.6 : SF.glide));
     ST.focusCur.x = lerp(ST.focusCur.x, g.x, k); ST.focusCur.y = lerp(ST.focusCur.y, g.y, k);
     ST.focusCur.z = lerp(ST.focusCur.z, g.z, k); ST.focusCur.dist = lerp(ST.focusCur.dist, g.dist, k);
   }
@@ -67,7 +69,7 @@ export function frame(now){
   // tour
   if (ST.tour && !ST.tween){
     ST.tour.wait += dt;
-    if (ST.tour.wait > 2.8){
+    if (ST.tour.wait > S.tour.waitSec){
       ST.tour.wait = 0; ST.tour.i++;
       if (ST.tour.i >= TOUR.length){ stopTour(); flyWorld(); }
       else { flyToRegion(TOUR[ST.tour.i]); updTour(); }
@@ -102,7 +104,7 @@ export function frame(now){
   if (fz) u.uFocus.value.set(fz.x, fz.z);
   const fTarget = (ST.hoverRegion || (ST.cursorRegion && ST.mouse)) ? 1 : (ST.activeRegion ? .45 : 0);
   u.uFocusAmt.value += (fTarget - u.uFocusAmt.value)*Math.min(1, dt*5);
-  if (u.uIntro.value < 1.6) u.uIntro.value = Math.min(1.6, u.uIntro.value + dt*.75);
+  if (u.uIntro.value < 1.6) u.uIntro.value = Math.min(1.6, u.uIntro.value + dt*S.map.introSpeed);
 
   dashMats.forEach(m => m.uniforms.uTime.value = ST.time);
   buildingMats.edgeMat.uniforms.uTime.value = ST.time;

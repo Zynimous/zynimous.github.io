@@ -2,8 +2,10 @@
    The same function exists on the CPU (hAt, for picking/anchors/minimap) and in GLSL (vertex shader).
    Hash uses 32-bit integer math on both sides so heights match. */
 import {REGIONS} from './world.js';
+import {S, glf} from './settings.js';
 
-export const PAD_IN = 30, PAD_OUT = 58, MAX_PADS = 16;
+const T = S.terrain;
+export const PAD_IN = T.padIn, PAD_OUT = T.padOut, MAX_PADS = 16;
 
 function hash(ix, iy){ let h = (Math.imul(ix,374761393) + Math.imul(iy,668265263))|0; h = Math.imul(h ^ (h>>>13), 1274126177); h ^= h>>>16; return (h>>>0)/4294967296; }
 function vnoise(x, y){
@@ -12,12 +14,12 @@ function vnoise(x, y){
   const a = hash(xi,yi), b = hash(xi+1,yi), c = hash(xi,yi+1), d = hash(xi+1,yi+1);
   return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
 }
-function fbm(x, y){ let s=0, a=.5, f=1; for (let o=0;o<5;o++){ s += a*vnoise(x*f, y*f); f *= 2.03; a *= .5; } return s; }
+function fbm(x, y){ let s=0, a=.5, f=1; for (let o=0;o<T.octaves;o++){ s += a*vnoise(x*f, y*f); f *= T.lacunarity; a *= T.gain; } return s; }
 function raw(x, z){
-  const n = fbm(x*0.0065+3.1, z*0.0065-1.7);
-  const r = fbm(x*0.003+11.3, z*0.003+5.9);
+  const n = fbm(x*T.scale+T.noiseOffset[0], z*T.scale+T.noiseOffset[1]);
+  const r = fbm(x*T.ridgeScale+T.ridgeOffset[0], z*T.ridgeScale+T.ridgeOffset[1]);
   const ridge = 1 - Math.abs(r*2-1);
-  return n*66 + ridge*ridge*36 - 9;
+  return n*T.amplitude + ridge*ridge*T.ridgeAmplitude + T.baseOffset;
 }
 // Landmark pads: flat, terraced plateaus at every region centre, blended smoothly into the surrounding ground.
 export const PADS = REGIONS.slice(0, MAX_PADS).map(r => { r.h = 2*Math.round(raw(r.x, r.z)/2) + 1; return [r.x, r.z, r.h]; });
@@ -47,12 +49,12 @@ export const HEIGHT_GLSL = `
     float a = hashU(i), b = hashU(i+ivec2(1,0)), c = hashU(i+ivec2(0,1)), d = hashU(i+ivec2(1,1));
     return a + (b-a)*u.x + (c-a)*u.y + (a-b-c+d)*u.x*u.y;
   }
-  float fbmU(vec2 p){ float s=0.0, a=0.5, f=1.0; for(int o=0;o<5;o++){ s += a*vnoiseU(p*f); f*=2.03; a*=0.5; } return s; }
+  float fbmU(vec2 p){ float s=0.0, a=0.5, f=1.0; for(int o=0;o<${T.octaves};o++){ s += a*vnoiseU(p*f); f*=${glf(T.lacunarity)}; a*=${glf(T.gain)}; } return s; }
   float heightAt(vec2 p){
-    float n = fbmU(p*0.0065+vec2(3.1,-1.7));
-    float r = fbmU(p*0.003+vec2(11.3,5.9));
+    float n = fbmU(p*${glf(T.scale)}+vec2(${glf(T.noiseOffset[0])},${glf(T.noiseOffset[1])}));
+    float r = fbmU(p*${glf(T.ridgeScale)}+vec2(${glf(T.ridgeOffset[0])},${glf(T.ridgeOffset[1])}));
     float ridge = 1.0 - abs(r*2.0-1.0);
-    float h = n*66.0 + ridge*ridge*36.0 - 9.0;
+    float h = n*${glf(T.amplitude)} + ridge*ridge*${glf(T.ridgeAmplitude)} + ${glf(T.baseOffset)};
     for(int k=0;k<${MAX_PADS};k++){
       if(k>=uPadN) break;
       float d = distance(p, uPads[k].xy);

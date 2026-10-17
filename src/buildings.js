@@ -3,9 +3,11 @@
    (hover, hidden-for-focus) is driven by uniforms matched against the per-vertex aBid attribute. */
 import * as THREE from 'three';
 import {BUILDINGS, REGIONS} from './world.js';
+import {S, IR, glf} from './settings.js';
 import {hAt} from './terrain.js';
 import {scene, terrainUniforms} from './scene.js';
 
+const SB = S.buildings;
 const part = (g, x, y, z, ry = 0) => ({g, x, y, z, ry});
 const box = (w, h, d, x = 0, y = 0, z = 0) => part(new THREE.BoxGeometry(w, h, d), x, y + h/2, z);
 const cyl = (rt, rb, h, seg, x = 0, y = 0, z = 0, ry = 0) => part(new THREE.CylinderGeometry(rt, rb, h, seg), x, y + h/2, z, ry);
@@ -43,7 +45,7 @@ function collect(parts, ox, oy, oz, rot, bid, info, out){
     g.applyMatrix4(_m); g.applyMatrix4(_r); g.translate(ox, oy, oz);
     const pos = g.attributes.position;
     for (let i = 0; i < pos.count; i++){ out.fill.push(pos.getX(i), pos.getY(i), pos.getZ(i)); out.fillId.push(bid); }
-    const e = new THREE.EdgesGeometry(g, 20), ep = e.attributes.position;
+    const e = new THREE.EdgesGeometry(g, SB.edgeAngle), ep = e.attributes.position;
     for (let i = 0; i < ep.count; i += 2){
       const ax = ep.getX(i), ay = ep.getY(i), az = ep.getZ(i), bx = ep.getX(i+1), by = ep.getY(i+1), bz = ep.getZ(i+1);
       const len = Math.hypot(bx-ax, by-ay, bz-az);
@@ -55,7 +57,7 @@ function collect(parts, ox, oy, oz, rot, bid, info, out){
 }
 const newOut = () => ({fill:[], fillId:[], edge:[], edgeId:[], edgeLD:[], edgeInfo:[], top:-1e9});
 function lineInfo(b){
-  const age = b.params.age, bright = Math.max(.35, 1 - age*.5);
+  const age = b.params.age, bright = Math.max(SB.ageMinBrightness, 1 - age*SB.ageDim);
   if (b.status === 'archived') return [bright*.55, 1.3, 0];
   if (b.status === 'classified') return [.55, 0, 1];
   return [bright * (b.status === 'stable' ? 1.1 : 1), 0, 0];
@@ -76,8 +78,8 @@ const fillMat = new THREE.ShaderMaterial({
   fragmentShader: `uniform float uHover; uniform vec2 uFog; uniform float uIntro; varying float vBid; varying float vCd; varying vec3 vW;
     void main(){
       float hov = abs(vBid-uHover) < .5 ? 1.0 : 0.0;
-      vec3 c = vec3(0.024) + vec3(0.05,0.022,0.008)*hov*0.6;
-      float rev = 1.0 - smoothstep(uIntro*560.0 - 50.0, uIntro*560.0, length(vW.xz));
+      vec3 c = vec3(${glf(SB.fillBrightness)}) + vec3(0.05,0.022,0.008)*hov*0.6;
+      float rev = 1.0 - smoothstep(uIntro*${IR} - 50.0, uIntro*${IR}, length(vW.xz));
       gl_FragColor = vec4(c * (1.0 - smoothstep(uFog.x, uFog.y, vCd)) * rev, 1.0);
     }`,
   polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1
@@ -92,10 +94,10 @@ const edgeMat = new THREE.ShaderMaterial({
       if (vInfo.y > 0.0 && mod(vLD, vInfo.y*2.0) > vInfo.y) discard;
       float hov = abs(vBid-uHover) < .5 ? 1.0 : 0.0;
       float a = vInfo.x;
-      if (vInfo.z > 0.5) a *= 0.55 + 0.45*step(0.5, fract(sin(vBid*12.9898 + floor(uTime*3.0)*3.1)*43758.5453));
-      vec3 c = mix(vec3(0.81)*a, uSignal, hov);
+      if (vInfo.z > 0.5) a *= 0.55 + 0.45*step(0.5, fract(sin(vBid*12.9898 + floor(uTime*${glf(SB.flickerRate)})*3.1)*43758.5453));
+      vec3 c = mix(vec3(${glf(SB.edgeBrightness)})*a, uSignal, hov);
       c += hov*vec3(0.25,0.08,0.0);
-      float rev = 1.0 - smoothstep(uIntro*560.0 - 50.0, uIntro*560.0, length(vW.xz));
+      float rev = 1.0 - smoothstep(uIntro*${IR} - 50.0, uIntro*${IR}, length(vW.xz));
       gl_FragColor = vec4(c * (1.0 - smoothstep(uFog.x, uFog.y, vCd)) * rev, 1.0);
     }`
 });
@@ -134,7 +136,7 @@ export function buildWorld(){
   for (const r of REGIONS){
     const parts = (LANDMARKS[r.landmark] || LANDMARKS.spire)();
     out.top = -1e9;
-    collect(parts, r.x, r.h - .4, r.z, 0, -2 - r.index, [1.15, 0, 0], out);
+    collect(parts, r.x, r.h - .4, r.z, 0, -2 - r.index, [SB.landmarkBrightness, 0, 0], out);
     r.landmarkTop = out.top;
   }
   toMeshes(out, buildingGroup);

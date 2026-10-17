@@ -1,10 +1,11 @@
 /* ================= BORDERS (ribbon meshes draped on terrain) + ROADS ================= */
 import * as THREE from 'three';
 import {BORDERS, REGIONS, RMAP} from './world.js';
+import {S, IR} from './settings.js';
 import {hAt, PAD_IN} from './terrain.js';
 import {scene, terrainUniforms, dashMat, addLine} from './scene.js';
 
-const HALF_W = .4, LIFT = .55, TIE_EVERY = 7, TIE_LEN = 2.6, TIE_W = .3;
+const SB = S.borders, HALF_W = SB.width/2, LIFT = SB.lift, TIE_EVERY = SB.tieEvery, TIE_LEN = SB.tieLength/2, TIE_W = SB.tieWidth/2;
 
 function resample(pts, step){
   const out = [pts[0]];
@@ -44,17 +45,17 @@ for (const e of BORDERS){
 const g = new THREE.BufferGeometry();
 g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
 const mat = new THREE.ShaderMaterial({
-  uniforms: {uFog: terrainUniforms.uFog, uIntro: terrainUniforms.uIntro, uColor:{value:new THREE.Color(0xf2f2f2)}},
+  uniforms: {uFog: terrainUniforms.uFog, uIntro: terrainUniforms.uIntro, uColor:{value:new THREE.Color(SB.color)}},
   vertexShader: `varying float vCd; varying vec3 vW; void main(){ vW = position; vCd = distance(cameraPosition, position); gl_Position = projectionMatrix*viewMatrix*vec4(position,1.0); }`,
   fragmentShader: `uniform vec2 uFog; uniform float uIntro; uniform vec3 uColor; varying float vCd; varying vec3 vW;
-    void main(){ float rev = 1.0 - smoothstep(uIntro*560.0 - 50.0, uIntro*560.0, length(vW.xz));
+    void main(){ float rev = 1.0 - smoothstep(uIntro*${IR} - 50.0, uIntro*${IR}, length(vW.xz));
       gl_FragColor = vec4(uColor * (1.0 - smoothstep(uFog.x, uFog.y, vCd)) * rev, 1.0); }`,
   polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2
 });
 const ribbon = new THREE.Mesh(g, mat); ribbon.frustumCulled = false; ribbon.renderOrder = 3; scene.add(ribbon);
 
 /* ---- roads: dashed grey routes between adjacent regions, also the auto-tour path ---- */
-export const tourMat = dashMat(0xe8e8e8, .85, 3.2, 2.6, 5);
+export const tourMat = dashMat(0xe8e8e8, SB.roadOpacity, SB.roadDash, SB.roadGap, SB.roadSpeed);
 export function route(A, B, bend){
   const dx = B.x-A.x, dz = B.z-A.z, L = Math.hypot(dx, dz), ux = dx/L, uz = dz/L;
   const s = [A.x + ux*(PAD_IN+8), A.z + uz*(PAD_IN+8)], e = [B.x - ux*(PAD_IN+8), B.z - uz*(PAD_IN+8)];
@@ -64,10 +65,10 @@ export function route(A, B, bend){
   return curve.getPoints(160).map(p => [p.x, p.z]);
 }
 borderLines.filter(b => b.b).forEach((b, i) => {
-  addLine(route(RMAP[b.a], RMAP[b.b], (i % 2 ? 1 : -1) * 14), tourMat, {lift:1, dashed:true});
+  addLine(route(RMAP[b.a], RMAP[b.b], (i % 2 ? 1 : -1) * SB.roadBend), tourMat, {lift:1, dashed:true});
 });
 /* region pad rings: faint dashed circle around each landmark pad */
-const ringMat = dashMat(0x8a8a8a, .55, 1.4, 1.8, 0);
+const ringMat = dashMat(0x8a8a8a, SB.padRingOpacity, 1.4, 1.8, 0);
 REGIONS.forEach(r => {
   const ring = []; for (let i = 0; i <= 96; i++){ const a = i/96*Math.PI*2; ring.push([r.x + Math.cos(a)*(PAD_IN-6), r.z + Math.sin(a)*(PAD_IN-6)]); }
   addLine(ring, ringMat, {y:r.h, lift:.3, dashed:true});

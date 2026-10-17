@@ -1,6 +1,7 @@
 import './style.css';
 import './core.js';
 import './world.js';
+import './settings.js';
 import './terrain.js';
 import './scene.js';
 import './buildings.js';

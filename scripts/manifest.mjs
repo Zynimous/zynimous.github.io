@@ -5,6 +5,7 @@ import path from 'node:path';
 import matter from 'gray-matter';
 import MarkdownIt from 'markdown-it';
 import YAML from 'yaml';
+import {readSettings} from './settings.mjs';
 
 const TYPE_DIR = {article: 'blogs', project: 'projects', note: 'notes'};
 const TYPE_REGION = {article: 'blogs', project: 'projects', note: 'hub'};
@@ -143,6 +144,7 @@ function itemPath(type, slug){
 export function buildManifest(root){
   const regionCfg = loadYaml(path.join(root, 'config/regions.yml'));
   const fam = loadYaml(path.join(root, 'config/model-families.yml'));
+  const S = readSettings(root), SB = S.buildings;
   const D = regionCfg.spacing || 210;
   const lockPath = path.join(root, 'layout.lock.json');
   const lock = fs.existsSync(lockPath) ? JSON.parse(fs.readFileSync(lockPath, 'utf8')) : {version: 1, buildings: {}};
@@ -207,7 +209,7 @@ export function buildManifest(root){
   const raw = items.map(({data, content}) => {
     const {html, toc} = renderBody(content);
     const wc = countWords(content);
-    const readMins = Math.max(1, Math.round(wc.cjk / 450 + wc.latin / 220));
+    const readMins = Math.max(1, Math.round(wc.cjk / SB.readCjkPerMin + wc.latin / SB.readLatinPerMin));
     const region = data.region || TYPE_REGION[data.type];
     return {
       id: data.id, slug: String(data.slug), type: data.type, title: data.title, summary: data.summary,
@@ -256,11 +258,12 @@ export function buildManifest(root){
   const days = (a, b) => (Date.parse(a) - Date.parse(b)) / 864e5;
   for (const b of raw){
     const g = rng('m' + b.id);
-    const w = Math.max(5.5, Math.min(11.5, 5.5 + Math.sqrt(b.words) / 8));
-    let h = b.type === 'article' ? 5 + b.readMins * 1.1 : b.type === 'project' ? 9 + (b.flagship ? 5 : 0) : 4;
-    h = Math.min(h * (.8 + g() * .5), 22);
-    b.params = {w: r1(w), d: r1(w * (.8 + g() * .4)), h: r1(h), rot: r1(g() * Math.PI * 2),
-      age: r1(Math.min(1, Math.max(0, days(now, b.date) / 365))), seed: Math.floor(g() * 1e9)};
+    const jit = ([lo, hi]) => lo + g() * (hi - lo);
+    const w = Math.max(SB.widthMin, Math.min(SB.widthMax, SB.widthMin + Math.sqrt(b.words) / SB.wordsPerWidth));
+    let h = b.type === 'article' ? SB.articleHeight + b.readMins * SB.heightPerMinute : b.type === 'project' ? SB.projectHeight + (b.flagship ? SB.flagshipBonus : 0) : SB.noteHeight;
+    h = Math.min(h * jit(SB.heightJitter), SB.heightMax);
+    b.params = {w: r1(w * SB.scale), d: r1(w * jit(SB.depthJitter) * SB.scale), h: r1(h * SB.scale), rot: r1(g() * Math.PI * 2),
+      age: r1(Math.min(1, Math.max(0, days(now, b.date) / SB.ageDays))), seed: Math.floor(g() * 1e9)};
   }
 
   // ---- lock file
@@ -270,7 +273,7 @@ export function buildManifest(root){
   const latest = buildings.filter(b => b.type !== 'note').slice().sort((a, b) => b.date.localeCompare(a.date)).map(b => b.id);
   const extent = regions.flatMap(r => r.poly).reduce((e, [x, z]) => ({minX: Math.min(e.minX, x), maxX: Math.max(e.maxX, x), minZ: Math.min(e.minZ, z), maxZ: Math.max(e.maxZ, z)}), {minX: 1e9, maxX: -1e9, minZ: 1e9, maxZ: -1e9});
   const decals = readDecals(root, byId), boards = readBoards(root, byId);
-  return {version: 1, generated: now, spacing: D, regions, borders, buildings, decals, boards, latest, extent};
+  return {version: 1, generated: now, spacing: D, settings: S, regions, borders, buildings, decals, boards, latest, extent};
 }
 
 export function contentFiles(root){

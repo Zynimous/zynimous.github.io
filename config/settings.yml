@@ -1,0 +1,130 @@
+# 可調參數。存檔後頁面自動重載。刪掉任何一行 = 用預設值（預設值在 scripts/settings.mjs）。
+# 寫錯鍵名或型別會直接報錯。距離單位都是世界單位（1 ≈ 10 m）。
+# 「縮放」(zoom) 指鏡頭到注視點的有效距離 deff：數字越大離越遠。
+
+camera:
+  fov: 42              # 視角（度）
+  far: 3200            # 遠裁切面；要比 map.fogFar 大
+  pixelRatioMax: 2     # 解析度上限（高 DPI 螢幕效能 vs 清晰度）
+  zoomMin: 55          # 最近可拉到的縮放
+  zoomMax: 520         # 最遠可拉到的縮放
+  elevNear: 66         # 最近時的俯角（度，90 = 正上方）
+  elevFar: 50          # 最遠時的俯角
+  worldZoom: 400       # 按 0 / Esc 回到全圖時的縮放
+  regionZoom: 125      # 飛到區域時的縮放
+  buildingZoom: 70     # 飛到建築時的縮放
+  bootZoom: 150        # 開啟首頁時的縮放
+  bootRegionZoom: 125  # 直接開啟 /blogs 這類區域網址時的縮放
+  flyMs: 850           # 飛行動畫時間（毫秒）
+
+controls:
+  keyPanSpeed: 1           # WASD 平移速度（每秒移動 縮放 × 此值）
+  keyZoomSpeed: 1.3        # Q/E 縮放速度
+  dragPanSpeed: 1          # 滑鼠拖曳平移倍率（1 = 地圖跟著游標走）
+  wheelZoomSpeed: 0.0016   # 滾輪縮放靈敏度
+  clickMaxMove: 6          # 按下到放開移動少於幾 px 算「點擊」而非拖曳
+  clickMaxMs: 500          # 按住少於幾毫秒算點擊
+  reachBand: 38            # 走出最外層邊界後，橡皮筋最多讓你超出多遠
+  reachMaxOver: 260        # 原始位置最多可以超出邊界多遠（再遠就硬擋）
+  reachSpring: 5           # 放開後彈回的速度
+
+focus:                 # 閱讀模式（點進建築）
+  elev: 20             # 鏡頭俯角（度）
+  frameScale: 2.5      # 鏡頭距離 = 建築尺寸 × frameScale + framePad
+  framePad: 16
+  lookHeight: 0.42     # 注視建築高度的比例（0 = 底部，1 = 頂端）
+  blendSec: 0.95       # 進出閱讀模式的轉場秒數
+  glide: 4.5           # 在建築之間切換時的跟隨速度（越大越快）
+  offsetX: 0.1         # 桌機：畫面往右推多少螢幕寬，讓建築落在左側
+  offsetYMobile: 0.2   # 手機：畫面往下推多少螢幕高
+  orbitAz: 0.9         # 拖曳環繞的左右極限（弧度）
+  orbitElMin: -0.08    # 上下極限（弧度，相對 elev）
+  orbitElMax: 0.22
+  orbitDragSpeed: 0.005
+  orbitTiltSpeed: 0.002
+  orbitWheelSpeed: 0.0006
+  blurNear: 1.2        # 背景模糊半徑：畫面下緣
+  blurFar: 7.2         #               畫面上緣
+  fog: 0.9             # 背景壓暗強度（0–1）
+
+tour:
+  waitSec: 2.8         # 自動導覽每區停留秒數
+
+terrain:               # 改這裡地形會整個變；建築會重新貼地，但座標不動
+  scale: 0.0065        # 主要起伏的頻率（越大山越密）
+  amplitude: 66        # 主要起伏高度
+  ridgeScale: 0.003    # 山脊頻率
+  ridgeAmplitude: 36   # 山脊高度
+  baseOffset: -9       # 整體高度平移
+  octaves: 5           # 細節層數（越多越碎，GPU 越重）
+  lacunarity: 2.03     # 每層頻率倍率
+  gain: 0.5            # 每層振幅倍率
+  noiseOffset: [3.1, -1.7]   # 換一組數字 = 換一張地形
+  ridgeOffset: [11.3, 5.9]
+  padIn: 30            # 區域中心平台：完全平的半徑
+  padOut: 58           #               開始融回地形的半徑
+  clipLevels: 5        # 地形網格環數（每多一環可視範圍 ×2）
+  clipCells: 128       # 每環格數（4 的倍數；越大越細越重）
+
+map:
+  fogNear: 260         # 霧開始的距離
+  fogFar: 980          # 完全黑掉的距離
+  contourScale: 0.8667 # 等高線密度（越大線越多）
+  lineColor: '#c7c7c2' # 等高線底色（游標附近會轉成 --signal 橘）
+  lineEnergy: 0.42     # 等高線基礎亮度
+  minorStrength: 0.55  # 細線亮度
+  majorStrength: 1     # 主線（每 10 條）亮度
+  haloStrength: 0.12   # 線旁光暈
+  cursorRadius: 45     # 游標光圈半徑
+  cursorGlow: 1        # 游標光圈亮度
+  focusRadius: 65      # 目前區域的光圈半徑
+  focusGlow: 0.75      # 目前區域的光圈亮度
+  gridSize: 40         # 背景方格間距
+  gridStrength: 0.055  # 背景方格亮度（0 = 關閉）
+  introSpeed: 0.75     # 開場由中心擴散的速度
+  introRadius: 560     # 開場擴散的半徑單位
+
+borders:
+  width: 0.8           # 邊界線寬
+  lift: 0.55           # 離地高度（太低會被地形吃掉）
+  tieEvery: 7          # 枕木間距
+  tieLength: 5.2       # 枕木長度
+  tieWidth: 0.6        # 枕木寬度
+  color: '#f2f2f2'
+  roadDash: 3.2        # 區域間虛線道路：實線段長度
+  roadGap: 2.6         #                 間隔長度
+  roadSpeed: 5         #                 流動速度（0 = 靜止）
+  roadOpacity: 0.85
+  roadBend: 14         #                 彎曲程度
+  padRingOpacity: 0.55 # 區域中心平台的虛線圈
+
+buildings:
+  # 尺寸（建置時計算，不影響座標）
+  scale: 1             # 所有建築整體縮放
+  widthMin: 5.5        # 寬度 = widthMin + √字數 / wordsPerWidth，上限 widthMax
+  widthMax: 11.5
+  wordsPerWidth: 8
+  depthJitter: [0.8, 1.2]    # 深度 = 寬度 × 此範圍內的隨機值
+  articleHeight: 5           # 文章高度 = articleHeight + 閱讀分鐘 × heightPerMinute
+  heightPerMinute: 1.1
+  projectHeight: 9           # 專案高度
+  flagshipBonus: 5           # 旗艦專案額外高度
+  noteHeight: 4              # 筆記高度
+  heightJitter: [0.8, 1.3]   # 高度 × 此範圍內的隨機值
+  heightMax: 22
+  readCjkPerMin: 450         # 閱讀速度（中文字 / 分）
+  readLatinPerMin: 220       # 閱讀速度（英文字 / 分）
+  # 外觀
+  edgeBrightness: 0.81       # 邊線亮度
+  fillBrightness: 0.024      # 實體面亮度（0 = 全黑剪影）
+  landmarkBrightness: 1.15   # 區域地標邊線亮度
+  edgeAngle: 20              # 兩面夾角大於幾度才畫邊線
+  ageDim: 0.5                # 舊建築變暗程度
+  ageMinBrightness: 0.35     # 最暗不低於
+  ageDays: 365               # 幾天算「最舊」
+  flickerRate: 3             # classified 狀態的閃爍頻率
+
+labels:
+  itemsHideZoom: 260   # 縮放大於此值時隱藏建築標籤，只剩區域名
+  gap: 8               # 標籤之間最小間距（px）
+  newDays: 21          # 最新一篇幾天內算 NEW

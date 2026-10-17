@@ -2,6 +2,7 @@
 import {ST} from './state.js';
 import {$} from './core.js';
 import {REGIONS} from './world.js';
+import {S} from './settings.js';
 import {canvas, FOV} from './scene.js';
 import {cam, clamp, D_MIN, D_MAX, flyToRegion, flyWorld} from './camera.js';
 import {pick, pickObject} from './picking.js';
@@ -9,6 +10,7 @@ import {stopTour, toggleTour} from './tour.js';
 import {openPalette, closePalette, palEl} from './palette.js';
 import {navigate, stepFocus, leaveFocus} from './router.js';
 
+const SK = S.controls, SF = S.focus;
 export const keys = new Set();
 export function userInput(){ ST.tween = null; stopTour(); }
 const typing = e => e.target && (e.target.tagName === 'INPUT' || e.target.isContentEditable);
@@ -41,12 +43,12 @@ addEventListener('blur', () => keys.clear());
 const ptrs = new Map(); let pinch = null;
 const ptrDist = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x-b.x, a.y-b.y); };
 function pan(dx, dy){
-  const upp = 2*cam.dist*Math.tan(FOV*Math.PI/360)/ST.Hd;
+  const upp = 2*cam.dist*Math.tan(FOV*Math.PI/360)/ST.Hd * SK.dragPanSpeed;
   cam.rx -= dx*upp; cam.rz -= dy*upp/Math.sin(cam.elev);
 }
 function orbit(dx, dy){
-  ST.orbit.az = clamp(ST.orbit.az - dx*.005, -.9, .9);
-  ST.orbit.el = clamp(ST.orbit.el + dy*.002, -.08, .22);
+  ST.orbit.az = clamp(ST.orbit.az - dx*SF.orbitDragSpeed, -SF.orbitAz, SF.orbitAz);
+  ST.orbit.el = clamp(ST.orbit.el + dy*SF.orbitTiltSpeed, SF.orbitElMin, SF.orbitElMax);
 }
 canvas.addEventListener('pointerdown', e => {
   canvas.focus({preventScroll:true});
@@ -64,7 +66,7 @@ canvas.addEventListener('pointermove', e => {
   else if (ptrs.size === 2 && pinch && !ST.focusWant){ cam.deff = clamp(pinch.deff * pinch.d / Math.max(ptrDist(), 1), D_MIN, D_MAX); }
 });
 function endPtr(e){
-  if (ST.drag && ptrs.size === 1 && ST.drag.moved < 6 && performance.now() - ST.drag.t < 500){
+  if (ST.drag && ptrs.size === 1 && ST.drag.moved < SK.clickMaxMove && performance.now() - ST.drag.t < SK.clickMaxMs){
     if (ST.focusWant){ leaveFocus(); }
     else {
       const hit = pickObject(e.clientX, e.clientY);
@@ -81,9 +83,9 @@ canvas.addEventListener('pointercancel', endPtr);
 canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse'){ ST.mouse = null; ST.cursorPt = null; } });
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  if (ST.focusWant){ ST.orbit.az = clamp(ST.orbit.az + e.deltaY*.0006, -.9, .9); return; }
+  if (ST.focusWant){ ST.orbit.az = clamp(ST.orbit.az + e.deltaY*SF.orbitWheelSpeed, -SF.orbitAz, SF.orbitAz); return; }
   userInput();
-  const f = Math.exp(clamp(e.deltaY, -120, 120) * 0.0016);
+  const f = Math.exp(clamp(e.deltaY, -120, 120) * SK.wheelZoomSpeed);
   const nd = clamp(cam.deff * f, D_MIN, D_MAX);
   const p = pick(e.clientX, e.clientY);
   if (p){ const k = 1 - nd/cam.deff; cam.rx += (p.x - cam.x)*k; cam.rz += (p.z - cam.z)*k; }

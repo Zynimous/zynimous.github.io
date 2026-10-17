@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import {ST} from './state.js';
 import {$, esc} from './core.js';
 import {REGIONS, BUILDINGS} from './world.js';
+import {S} from './settings.js';
 import {camera} from './scene.js';
 import {cam} from './camera.js';
 
@@ -39,9 +40,9 @@ labelsEl.addEventListener('click', e => {
 
 const v = new THREE.Vector3();
 const overlaps = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
-const GAP = 8;               // breathing room between two labels
+const GAP = S.labels.gap;               // breathing room between two labels
 const STEM = 18;             // px between anchor and label (fixed, set in CSS too)
-const ITEMS_HIDE = 260;      // camera deff above which building labels are hidden (world view = regions only)
+const ITEMS_HIDE = S.labels.itemsHideZoom;      // camera deff above which building labels are hidden (world view = regions only)
 const HUD_IDS = ['hud-tl', 'hud-tr', 'hud-left', 'hud-br', 'hud-bl', 'tourchip'];
 let hudRects = [];
 function measureHud(){

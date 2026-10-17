@@ -3,6 +3,7 @@
    face "upright" stands a flat panel on the ground. Colours and fonts come from the :root CSS vars. */
 import * as THREE from 'three';
 import {DECALS} from './world.js';
+import {IR} from './settings.js';
 import {hAt} from './terrain.js';
 import {scene, renderer, terrainUniforms} from './scene.js';
 import {baseHeight} from './buildings.js';
@@ -20,7 +21,7 @@ const mat = (tex, d) => new THREE.ShaderMaterial({
   fragmentShader: `uniform sampler2D tMap; uniform vec3 uColor; uniform float uTint, uOpacity, uIntro; uniform vec2 uFog; varying vec2 vUv; varying float vCd; varying vec3 vW;
     void main(){
       vec4 t = texture2D(tMap, vUv);
-      float rev = 1.0 - smoothstep(uIntro*560.0 - 50.0, uIntro*560.0, length(vW.xz));
+      float rev = 1.0 - smoothstep(uIntro*${IR} - 50.0, uIntro*${IR}, length(vW.xz));
       float a = t.a * uOpacity * (1.0 - smoothstep(uFog.x, uFog.y, vCd)) * rev;
       if (a < 0.004) discard;
       gl_FragColor = vec4(mix(t.rgb, uColor, uTint), a);

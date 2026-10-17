@@ -7,6 +7,7 @@
 - [區域：config/regions.yml](#區域configregionsyml)
 - [建築造型：config/model-families.yml](#建築造型configmodel-familiesyml)
 - [世界物件：decal 與看板](#世界物件decal-與看板)
+- [可調參數：config/settings.yml](#可調參數configsettingsyml)
 - [座標鎖：layout.lock.json](#座標鎖layoutlockjson)
 - [路由與部署](#路由與部署)
 - [src/ 模組總覽](#src-模組總覽)
@@ -29,6 +30,7 @@
 | `config/regions.yml` | 區域：位置、名稱、地標 |
 | `config/model-families.yml` | 分類 → 建築造型 |
 | `config/decals.yml` | 地面文字 / 圖片（選用） |
+| `config/settings.yml` | 鏡頭、操作、地形、等高線、建築等數值（選用） |
 | `layout.lock.json` | 自動產生的建築座標鎖，要 commit |
 | `public/` | 靜態資源（decal 圖片等） |
 
@@ -195,6 +197,30 @@ title: 這張地圖怎麼讀
 
 兩者若 `region` 寫錯、`id` 重複、`face` 或 `color` 不在清單內，都會在建置時報錯。
 
+## 可調參數：`config/settings.yml`
+
+所有「改個數字就好」的值都集中在這裡，每一行旁邊有註解。分成這幾區：
+
+| 區段 | 內容 |
+| --- | --- |
+| `camera` | 視角、縮放上下限、俯角、各種跳轉的預設縮放、飛行時間 |
+| `controls` | WASD / 拖曳 / 滾輪速度、點擊判定、邊界橡皮筋 |
+| `focus` | 閱讀模式的鏡頭角度、構圖、轉場、環繞限制、背景模糊 |
+| `tour` | 自動導覽停留時間 |
+| `terrain` | 地形起伏（頻率、高度、雜訊偏移 = 換一張地形）、區域平台、地形網格精細度 |
+| `map` | 霧、等高線密度與亮度、游標光圈、背景方格、開場動畫 |
+| `borders` | 邊界線與枕木尺寸、道路虛線 |
+| `buildings` | 建築尺寸公式（整體縮放、寬高、閱讀速度）與邊線 / 填色亮度 |
+| `labels` | 建築標籤隱藏門檻、標籤間距、NEW 天數 |
+
+規則：
+
+- 刪掉任一行就回到預設值；預設值定義在 `scripts/settings.mjs` 的 `DEFAULTS`，新增參數時兩邊都要加。
+- 鍵名打錯、型別不對（例如數字寫成字串）會在建置時報錯，不會默默失效。
+- 改 `terrain` 會讓整張地形變樣，建築會重新貼地，但座標（鎖檔）不動；地形大改後建議看一下有沒有建築卡在陡坡上。
+- 建築尺寸在建置時計算，不影響座標；但 `buildings.scale` 調太大，相鄰建築可能互相重疊。
+- 顏色仍以 `:root` 色票為準：`map.lineColor`、`borders.color` 只用灰白，不要引入新的強調色。
+
 ## 座標鎖：`layout.lock.json`
 
 建築第一次出現時取得的座標會寫進這個檔，之後永遠不動。每次 `dev` 或 `build` 發現新建築時會自動更新。**要跟內容一起 commit**，否則部署環境會算出不同位置。
@@ -325,6 +351,7 @@ title: 這張地圖怎麼讀
 
 - 色彩、字型：`src/style.css` 的 `:root` 變數。decal 的顏色與字型也從這裡讀。
 - 等高線的橘色：`--signal` 要和 shader 的 `uLine` / `uSignal` 一起改。
-- 建築形狀：`buildings.js` 的 `FAMILIES`。地形起伏：`terrain.js` 的 `hAt` 與 `HEIGHT_GLSL` 要同步修改。
+- 數值類（鏡頭、速度、地形起伏、等高線亮度、建築尺寸…）：`config/settings.yml`。
+- 建築形狀：`buildings.js` 的 `FAMILIES`。地形演算法本身：`terrain.js` 的 `hAt` 與 `HEIGHT_GLSL` 要同步修改。
 
 **建置報錯時**：錯誤訊息會列出檔名與原因（缺欄位、`type` 與資料夾不符、`id`/`slug` 重複、`status` 不合法、未知 `region`），改正後存檔就會自動重載。

@@ -2,6 +2,7 @@
 import {ST} from './state.js';
 import {$, reduce} from './core.js';
 import {RMAP, BPATH, REGIONS, BUILDINGS} from './world.js';
+import {S} from './settings.js';
 import {canvas, terrainUniforms} from './scene.js';
 import {cam} from './camera.js';
 import {frame} from './loop.js';
@@ -23,7 +24,7 @@ $('scrim').addEventListener('click', leaveFocus);
 const path = initialPath();
 const startB = BPATH[path], startR = REGIONS.find(r => r.path === path && r.id !== 'hub');
 const home = startB ? RMAP[startB.region] : (startR || RMAP.hub);
-cam.rx = cam.x = home.x; cam.rz = cam.z = home.z - 26; cam.deff = startR ? 125 : 150;
+cam.rx = cam.x = home.x; cam.rz = cam.z = home.z - 26; cam.deff = startR ? S.camera.bootRegionZoom : S.camera.bootZoom;
 if (startB) navigate(path, 'none', true);
 requestAnimationFrame(t => { ST.last = t; frame(t); });
 

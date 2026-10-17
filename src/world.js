@@ -24,9 +24,9 @@ BUILDINGS.forEach((b, i) => {
   b.code = `${RMAP[b.region].code}-${String((perRegion[b.region] = (perRegion[b.region] || 0) + 1)).padStart(2, '0')}`;
   b.prio = (b.pinned ? 4 : 0) + (b.featured ? 2 : 0);
 });
-// newest first; "new" = within 21 days of the newest entry
+// newest first; "new" = within labels.newDays (settings) days of the newest entry
 const newest = BUILDINGS.reduce((m, b) => b.date > m ? b.date : m, '');
-BUILDINGS.forEach(b => { b.isNew = (Date.parse(newest) - Date.parse(b.date)) / 864e5 <= 21; });
+BUILDINGS.forEach(b => { b.isNew = (Date.parse(newest) - Date.parse(b.date)) / 864e5 <= manifest.settings.labels.newDays; });
 
 /** Hex-lattice cell lookup: region owning (x,z), or null outside every region. */
 export function regionAt(x, z){
@@ -57,7 +57,7 @@ function nearestOnOuter(x, z){
   return {x: bx, z: bz, d: bd};
 }
 /** Rubber-band reach limit. Returns the damped position and how far past the limit the raw target is. */
-const K_BAND = 38;
+const K_BAND = manifest.settings.controls.reachBand;
 export function limitToReach(x, z){
   if (regionAt(x, z)) return {x, z, over: 0};
   const L = nearestOnOuter(x, z);

@@ -2,21 +2,24 @@
 import * as THREE from 'three';
 import {reduce} from './core.js';
 import {HEIGHT_GLSL, PADS, MAX_PADS, hAt} from './terrain.js';
+import {S, glf, glc} from './settings.js';
+
+const SC = S.camera, SM = S.map;
 
 THREE.ColorManagement.enabled = false; // keep r128-era colour behaviour (ShaderMaterial colours are raw)
 export const canvas = document.getElementById('scene');
 export const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, SC.pixelRatioMax));
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 renderer.setClearColor(0x000000, 1);
 renderer.autoClear = false;
 export const scene = new THREE.Scene();
-export const FOV = 42;
-export const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 3200);
-export const FOG_NEAR = 260, FOG_FAR = 980;
+export const FOV = SC.fov;
+export const camera = new THREE.PerspectiveCamera(FOV, 1, 1, SC.far);
+export const FOG_NEAR = SM.fogNear, FOG_FAR = SM.fogFar;
 
 /* ---- terrain: nested square rings (clipmap), height computed in the vertex shader from world coords ---- */
-const LEVELS = 5, CELLS = 128, HOLE = 30;
+const LEVELS = S.terrain.clipLevels, CELLS = S.terrain.clipCells, HOLE = CELLS/4 - 2;
 export const terrainUniforms = {
   uLine:{value:new THREE.Color(0xff6a1a)}, uCursor:{value:new THREE.Vector2(9999,9999)}, uCursorOn:{value:0},
   uFocus:{value:new THREE.Vector2(9999,9999)}, uFocusAmt:{value:0}, uIntro:{value: reduce ? 2 : 0}, uZoom:{value: 200},
@@ -53,7 +56,7 @@ const FRAG = `
   float iso(float v, float w){ float d = max(fwidth(v), 1e-4); float f = abs(fract(v - 0.5) - 0.5) / d; return 1.0 - clamp(f / w, 0.0, 1.0); }
   void main(){
     if (uInner.z > 0.0 && abs(vW.x-uInner.x) < uInner.z && abs(vW.z-uInner.y) < uInner.z) discard;
-    float vH = vH0 * 0.8667;
+    float vH = vH0 * ${glf(SM.contourScale)};
     float cd = distance(cameraPosition, vW);
     // zoom LOD: fine lines only when close, coarse ones persist when far; everything thins out with distance
     float zFine = (1.0 - smoothstep(80.0, 160.0, uZoom)) * (1.0 - smoothstep(160.0, 380.0, cd));
@@ -63,19 +66,19 @@ const FRAG = `
     float major = max(iso(vH/10.0, 1.35), iso(vH/20.0, 1.7)*max(zFar, smoothstep(300.0, 700.0, cd)));
     float halo  = max(iso(vH/2.0, 4.5)*zMid, iso(vH, 4.0)*zFine*0.5);
     float dc = distance(vW.xz, uCursor);
-    float cur = exp(-dc*dc/2000.0) * uCursorOn;
+    float cur = exp(-dc*dc/${glf(SM.cursorRadius**2)}) * uCursorOn;
     float df = distance(vW.xz, uFocus);
-    float foc = exp(-df*df/4200.0) * uFocusAmt;
-    float energy = 0.42 + cur*1.0 + foc*0.75;
-    vec3 lc = mix(vec3(0.78,0.78,0.76), uLine, clamp(cur*1.3, 0.0, 1.0));
-    vec3 col = lc * (minor*0.55 + major*1.0 + halo*0.12) * energy;
-    float gx = iso(vW.x/40.0, 0.7), gz = iso(vW.z/40.0, 0.7);
-    col += vec3(0.055) * max(gx, gz) * (1.0 - smoothstep(300.0, 700.0, cd));
+    float foc = exp(-df*df/${glf(SM.focusRadius**2)}) * uFocusAmt;
+    float energy = ${glf(SM.lineEnergy)} + cur*${glf(SM.cursorGlow)} + foc*${glf(SM.focusGlow)};
+    vec3 lc = mix(${glc(SM.lineColor)}, uLine, clamp(cur*1.3, 0.0, 1.0));
+    vec3 col = lc * (minor*${glf(SM.minorStrength)} + major*${glf(SM.majorStrength)} + halo*${glf(SM.haloStrength)}) * energy;
+    float gx = iso(vW.x/${glf(SM.gridSize)}, 0.7), gz = iso(vW.z/${glf(SM.gridSize)}, 0.7);
+    col += vec3(${glf(SM.gridStrength)}) * max(gx, gz) * (1.0 - smoothstep(300.0, 700.0, cd));
     col += vec3(0.012 + max(vH0,0.0)*0.0005);
     float fog = 1.0 - smoothstep(uFog.x, uFog.y, cd);
     float r = length(vW.xz);
-    float rev = 1.0 - smoothstep(uIntro*560.0 - 50.0, uIntro*560.0, r);
-    float front = exp(-pow((r - uIntro*560.0)/14.0, 2.0)) * step(uIntro, 1.0);
+    float rev = 1.0 - smoothstep(uIntro*${glf(SM.introRadius)} - 50.0, uIntro*${glf(SM.introRadius)}, r);
+    float front = exp(-pow((r - uIntro*${glf(SM.introRadius)})/14.0, 2.0)) * step(uIntro, 1.0);
     col *= fog * rev;
     col += vec3(0.8) * front * 0.5 * minor;
     gl_FragColor = vec4(col, 1.0);

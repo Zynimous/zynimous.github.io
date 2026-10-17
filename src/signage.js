@@ -8,7 +8,7 @@ import {$, esc} from './core.js';
 import {REGIONS, BUILDINGS} from './world.js';
 import {S} from './settings.js';
 import {camera} from './scene.js';
-import {cam} from './camera.js';
+import {cam, labelScale} from './camera.js';
 
 const labelsEl = $('labels');
 const ents = [];
@@ -62,7 +62,7 @@ export function updateSignage(){
   if (focused) return;
   if (frameN % 30 === 1) measureHud();
   const tx = cam.x, tz = cam.z, showItems = cam.deff <= ITEMS_HIDE;
-  const cands = [];
+  const cands = [], sc = labelScale();
   for (const E of ents){
     E.want = false;
     if (E.kind === 'item' && !showItems) continue;
@@ -71,7 +71,8 @@ export function updateSignage(){
     E.sx = (v.x*.5 + .5)*W; E.sy = (-v.y*.5 + .5)*H;
     if (!E.w || frameN % 60 === 0){ E.w = E.card.offsetWidth; E.h = E.card.offsetHeight; }
     const w = E.w || 120, h = E.h || 26;
-    E.rect = {l: E.sx - w/2 - GAP/2, r: E.sx + w/2 + GAP/2, t: E.sy - STEM - h - GAP/2, b: E.sy + GAP/2};
+    E.sc = E.kind === 'region' ? sc : 1;
+    E.rect = {l: E.sx - w*E.sc/2 - GAP/2, r: E.sx + w*E.sc/2 + GAP/2, t: E.sy - (STEM + h)*E.sc - GAP/2, b: E.sy + GAP/2};
     // fully on screen or nothing
     if (E.rect.l < 0 || E.rect.r > W || E.rect.t < 0 || E.rect.b > H) continue;
     if (E.kind === 'region') E.score = 1e6 - E.sy;
@@ -92,7 +93,7 @@ export function updateSignage(){
       E.el.style.transitionDelay = stagger ? (i*60) + 'ms' : '0ms';
       requestAnimationFrame(() => E.el.classList.add('on'));
     }
-    E.el.style.transform = `translate3d(${E.sx.toFixed(1)}px,${E.sy.toFixed(1)}px,0)`;
+    E.el.style.transform = `translate3d(${E.sx.toFixed(1)}px,${E.sy.toFixed(1)}px,0) scale(${E.sc.toFixed(3)})`;
     E.card.style.pointerEvents = 'auto';
   });
 }

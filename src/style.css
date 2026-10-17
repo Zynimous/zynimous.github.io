@@ -48,6 +48,17 @@ body.focus #boards{opacity:0}
 .card:hover,.card:focus-visible{border-color:var(--signal);background:rgba(20,20,20,.95);outline:none}
 .tag.region .card{font:700 11px/1 var(--f-display);letter-spacing:.16em;border-color:var(--ash)}
 
+/* train label (rides the border) */
+.train{position:fixed;left:0;top:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .3s;will-change:transform}
+.train.on .t-top,.train.on .t-bot{opacity:1}
+.train .t-top,.train .t-bot{position:absolute;left:0;display:flex;gap:6px;align-items:center;white-space:nowrap;font:500 10px/1 var(--f-mono);letter-spacing:.2em;
+  color:var(--mute);padding:5px 10px;background:rgba(0,0,0,.72);border:1px solid var(--rule-hi);opacity:0;transform:translateX(-50%)}
+.train .t-top{bottom:7px}.train .t-bot{top:7px}
+.train .me{color:var(--ink);border-color:var(--ash)}
+.train .t-a{color:var(--ash)}
+.train.flash .me{animation:tflash .7s steps(2,end) 1}
+@keyframes tflash{0%,100%{background:rgba(0,0,0,.72)}50%{background:var(--ink);color:var(--void)}}
+body.focus .train{display:none}
 #fade{position:fixed;inset:0;z-index:9;background:#000;opacity:0;pointer-events:none;transition:opacity .8s}
 #fade.on{opacity:1;pointer-events:auto}
 
@@ -231,6 +242,7 @@ body.reading #panel{transform:none;opacity:1}
   .p-meta div:nth-child(n+3){border-top:1px solid var(--rule)}
   #panel{top:auto;left:0;right:0;bottom:0;width:auto;height:58vh;border-width:1px 0 0;transform:translateY(105%)}
   #panel .i-scroll{padding:20px 18px 40px}
+  .train{display:none}
   #tourchip{top:auto;bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 }
 @media (prefers-reduced-motion:reduce){

@@ -27,18 +27,18 @@ const items = BOARDS.map(d => {
   el.style.width = d.px + 'px';
   const head = d.title || d.kicker ? `<header>${d.kicker ? `<div class="bd-k">${esc(d.kicker)}</div>` : ''}${d.title ? `<h3>${esc(d.title)}</h3>` : ''}</header>` : '';
   el.innerHTML = `${head}<div class="p-body bd-body">${d.html}</div>`;
-  const o = new CSS3DObject(el), s = d.width / d.px, a = d.rot * Math.PI / 180;
+  const o = new CSS3DObject(el), s = d.width / d.px * S.labels.boardScale, a = d.rot * Math.PI / 180;
   o.scale.setScalar(s);
   o.rotation.order = 'YXZ'; o.rotation.y = a;
   if (d.face === 'upright'){
     // bottom edge on the lowest ground under the board; height follows the rendered content
-    const base = baseHeight(d.x, d.z, d.width / 2) + .5;
+    const base = baseHeight(d.x, d.z, d.width * S.labels.boardScale / 2) + .5;
     o.position.set(d.x, base, d.z);
     new ResizeObserver(() => { o.position.y = base + el.offsetHeight * s / 2; }).observe(el);
   } else {
     // lie flat (text top = north), just above the highest ground under it
     o.rotation.x = -Math.PI / 2;
-    const r = d.width / 2;
+    const r = d.width * S.labels.boardScale / 2;
     const top = Math.max(...[[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]].map(([dx, dz]) => hAt(d.x + dx, d.z + dz)));
     o.position.set(d.x, top + .6, d.z);
   }

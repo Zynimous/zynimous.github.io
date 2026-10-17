@@ -18,6 +18,7 @@ import './router.js';
 import './boards.js';
 import './input.js';
 import './hud.js';
+import './trainlabel.js';
 import './render.js';
 import './loop.js';
 import './boot.js';

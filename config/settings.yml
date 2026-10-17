@@ -125,6 +125,9 @@ buildings:
   flickerRate: 3             # classified 狀態的閃爍頻率
 
 labels:
+  boardScale: 1.25    # 地圖上 boards（markdown 文字卡片）整體放大倍率
+  shrinkStart: 220     # 縮放大於此值時，區域標籤與邊境標籤開始跟著縮小
+  shrinkMin: 0.55      # 縮放到最遠時的標籤比例（1 = 不縮小）
   itemsHideZoom: 260   # 縮放大於此值時隱藏建築標籤，只剩區域名
   gap: 8               # 標籤之間最小間距（px）
   newDays: 21          # 最新一篇幾天內算 NEW

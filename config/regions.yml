@@ -2,6 +2,6 @@
 # take the next free slot, so the map grows outward and existing regions never move.
 spacing: 364
 regions:
-  - {id: hub,      slot: 0, name: HUB,              zh: 樞紐,   code: HUB, types: [note],    landmark: spire}
+  - {id: hub,      slot: 0, name: ABOUT ME,         zh: 關於我, code: ABT, types: [note],    landmark: spire}
   - {id: blogs,    slot: 1, name: BLOG DISTRICT,    zh: 文章區, code: BLG, types: [article], landmark: archive}
   - {id: projects, slot: 2, name: PROJECT DISTRICT, zh: 專案區, code: PRJ, types: [project], landmark: foundry}

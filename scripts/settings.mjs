@@ -52,7 +52,7 @@ export const DEFAULTS = {
     edgeBrightness: .81, fillBrightness: .024, landmarkBrightness: 1.15, edgeAngle: 20,
     ageDim: .5, ageMinBrightness: .35, ageDays: 365, flickerRate: 3
   },
-  labels: {itemsHideZoom: 260, gap: 8, newDays: 21}
+  labels: {boardScale: 1.25, shrinkStart: 220, shrinkMin: .55, itemsHideZoom: 260, gap: 8, newDays: 21}
 };
 
 export function readSettings(root){

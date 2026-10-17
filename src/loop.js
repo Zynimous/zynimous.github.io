@@ -14,6 +14,7 @@ import {setHover, buildingMats} from './buildings.js';
 import {focusGoal} from './focus.js';
 import {render} from './render.js';
 import {updateSignage} from './signage.js';
+import {updateTrain} from './trainlabel.js';
 import {updateBoards} from './boards.js';
 import {syncRegionUrl} from './router.js';
 
@@ -112,6 +113,7 @@ export function frame(now){
   updateBoards();
 
   updateSignage();
+  updateTrain(dt);
 
   // readouts
   $('r-tgt').textContent = `E ${gridRef(cam.x)} · N ${gridRef(-cam.z)}`;

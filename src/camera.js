@@ -18,6 +18,8 @@ const WORLD = {x: (M.extent.minX + M.extent.maxX)/2, z: (M.extent.minZ + M.exten
 export const WORLD_VIEW = {x: WORLD.x, z: WORLD.z + 10, deff: SC.worldZoom};
 export const cam = {x:0, z:0, deff:WORLD_VIEW.deff, dist:WORLD_VIEW.deff, elev:.9};
 export const D_MIN = SC.zoomMin, D_MAX = SC.zoomMax, FOCUS_EL = SF.elev*Math.PI/180;
+/* screen-label scale: full size up to labels.shrinkStart, then shrinks toward labels.shrinkMin at the farthest zoom */
+export const labelScale = () => lerp(1, S.labels.shrinkMin, smooth(S.labels.shrinkStart, D_MAX, cam.deff));
 cam.rx = cam.x; cam.rz = cam.z;
 ST.camTy = hAt(cam.x, cam.z); // focus height: eased only during fly-to, held during free movement
 

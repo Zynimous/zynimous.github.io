@@ -4,7 +4,7 @@ region: hub
 x: 82
 z: -4
 width: 60
-kicker: BRIEFING · HUB
+kicker: BRIEFING · ABOUT ME
 title: 這張地圖怎麼讀
 ---
 這是 Zynimous 的個人網站。每一棟建築都是一份內容：文章、專案或筆記。點擊建築即可閱讀。

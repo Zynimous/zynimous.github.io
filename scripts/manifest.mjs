@@ -23,10 +23,12 @@ function spiralAxial(slot){
   if (slot === 0) return [0, 0];
   let ring = 1, left = slot - 1;
   while (left >= 6 * ring){ left -= 6 * ring; ring++; }
-  let q = AX_DIRS[4][0] * ring, r = AX_DIRS[4][1] * ring; // start corner
+  // start at the lower-left corner and walk clockwise on screen (north is -z), so slots 1 and 2
+  // sit below the hub and the hub reads as the top of the map
+  let q = AX_DIRS[2][0] * ring, r = AX_DIRS[2][1] * ring; // start corner
   // walk ring: 6 sides
   const side = Math.floor(left / ring), step = left % ring;
-  const walk = [2, 3, 4, 5, 0, 1];
+  const walk = [0, 1, 2, 3, 4, 5];
   for (let s = 0; s < side; s++){ q += AX_DIRS[walk[s]][0] * ring; r += AX_DIRS[walk[s]][1] * ring; }
   q += AX_DIRS[walk[side]][0] * step; r += AX_DIRS[walk[side]][1] * step;
   return [q, r];

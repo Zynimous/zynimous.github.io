@@ -16,6 +16,7 @@ function manifestPlugin(){
       this.addWatchFile(path.join(ROOT, 'config/model-families.yml'));
       this.addWatchFile(path.join(ROOT, 'config/decals.yml'));
       this.addWatchFile(path.join(ROOT, 'config/settings.yml'));
+      this.addWatchFile(path.join(ROOT, 'layout.lock.json'));
       return 'export default ' + JSON.stringify(buildManifest(ROOT));
     },
     // SPA fallbacks for static hosts: GitHub Pages serves 404.html, Cloudflare Pages reads _redirects.
@@ -26,8 +27,10 @@ function manifestPlugin(){
       fs.writeFileSync(path.join(dist, '_redirects'), '/*  /index.html  200\n');
     },
     configureServer(server){
-      server.watcher.add([path.join(ROOT, 'content'), path.join(ROOT, 'config')]);
-      const hit = f => /[\\/](content|config)[\\/]/.test(f);
+      // layout.lock.json too: hand edits to frozen coordinates must reach the page (the manifest only
+      // rewrites it when new content is placed, so this costs at most one extra reload)
+      server.watcher.add([path.join(ROOT, 'content'), path.join(ROOT, 'config'), path.join(ROOT, 'layout.lock.json')]);
+      const hit = f => /[\\/](content|config)[\\/]|[\\/]layout\.lock\.json$/.test(f);
       const reload = f => {
         if (!hit(f)) return;
         const m = server.moduleGraph.getModuleById(RID);

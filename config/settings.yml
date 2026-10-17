@@ -13,7 +13,7 @@ camera:
   worldZoom: 400       # 按 0 / Esc 回到全圖時的縮放
   regionZoom: 125      # 飛到區域時的縮放
   buildingZoom: 70     # 飛到建築時的縮放
-  bootZoom: 150        # 開啟首頁時的縮放
+  bootZoom: 300        # 開啟首頁時的縮放
   bootRegionZoom: 125  # 直接開啟 /blogs 這類區域網址時的縮放
   flyMs: 850           # 飛行動畫時間（毫秒）
 
@@ -59,7 +59,7 @@ terrain:               # 改這裡地形會整個變；建築會重新貼地，�
   octaves: 5           # 細節層數（越多越碎，GPU 越重）
   lacunarity: 2.03     # 每層頻率倍率
   gain: 0.5            # 每層振幅倍率
-  noiseOffset: [3.1, -1.7]   # 換一組數字 = 換一張地形
+  noiseOffset: [3.1, -1.2]   # 換一組數字 = 換一張地形
   ridgeOffset: [11.3, 5.9]
   padIn: 30            # 區域中心平台：完全平的半徑
   padOut: 58           #               開始融回地形的半徑

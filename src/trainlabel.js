@@ -10,6 +10,8 @@ import {borderLines} from './borders.js';
 import {nearestRegion} from './world.js';
 
 const el = $('train'), rowTop = el.querySelector('.t-top'), rowBot = el.querySelector('.t-bot');
+// the flash class must not outlive its animation: otherwise any later move of `.me` to another row/border replays it
+el.addEventListener('animationend', () => el.classList.remove('flash'));
 const v = new THREE.Vector3();
 let cur = -1, s = 0, curRegion = null, shownKey = '', flashT = 0, lastFlipLayout = '';
 const MARGIN = 26; // world units kept clear of the visible segment ends

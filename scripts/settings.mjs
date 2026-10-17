@@ -20,7 +20,7 @@ export const DEFAULTS = {
   },
   focus: {
     elev: 20, frameScale: 2.5, framePad: 16, lookHeight: .42,
-    blendSec: .95, glide: 4.5, offsetX: .1, offsetYMobile: .2,
+    blendSec: .95, glide: 4.5, offsetX: .25, offsetYMobile: .2,
     orbitAz: .9, orbitElMin: -.08, orbitElMax: .22, orbitDragSpeed: .005, orbitTiltSpeed: .002, orbitWheelSpeed: .0006,
     blurNear: 1.2, blurFar: 7.2, fog: .9
   },

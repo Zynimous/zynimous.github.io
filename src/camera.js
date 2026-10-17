@@ -1,6 +1,6 @@
 /* ================= CAMERA STATE =================
    Explore pose: orbit-less target + effective distance, elevation tied to distance (camera.elevFar..elevNear in settings).
-   Focus pose: low (≈20°) look at one building, composition shifted so it sits in the left ~40% of the screen. */
+   Focus pose: low (≈20°) look at one building, composition shifted so it sits at the centre of the left half (25% from the left). */
 import {ST} from './state.js';
 import {reduce} from './core.js';
 import {hAt} from './terrain.js';
@@ -61,7 +61,7 @@ export function updateCamera(){
     fPos.x = f.x + f.dist*Math.sin(az)*Math.cos(el); fPos.y = f.y + f.dist*Math.sin(el); fPos.z = f.z + f.dist*Math.cos(az)*Math.cos(el);
     camera.position.set(lerp(p.x, fPos.x, a), lerp(p.y, fPos.y, a), lerp(p.z, fPos.z, a));
     camera.lookAt(lerp(l.x, fLook.x, a), lerp(l.y, fLook.y, a), lerp(l.z, fLook.z, a));
-    // building to the left ~40% of the screen (or upper part on phones, panel is a bottom sheet)
+    // building at the centre of the left half (25% from the left) (or upper part on phones, panel is a bottom sheet)
     const mobile = ST.Wd < 760;
     camera.setViewOffset(ST.Wd, ST.Hd, mobile ? 0 : a*ST.Wd*SF.offsetX, mobile ? a*ST.Hd*SF.offsetYMobile : 0, ST.Wd, ST.Hd);
   } else {

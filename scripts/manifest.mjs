@@ -220,7 +220,7 @@ export function buildManifest(root){
       series: data.series || null, status: data.status || 'active',
       featured: !!data.featured, pinned: !!data.pinned, flagship: !!data.flagship, site: data.site || null,
       cover: data.cover || null, model: data.model || null, stack: data.stack || [],
-      position: data.position || null, words: wc.words, readMins, path: itemPath(data.type, String(data.slug)),
+      position: data.position || null, offset: data.offset || null, words: wc.words, readMins, path: itemPath(data.type, String(data.slug)),
       family: famOf(data), html, toc
     };
   });
@@ -240,7 +240,13 @@ export function buildManifest(root){
     let nextK = 0; const taken = new Set(used.filter(k => k != null));
     for (const b of list){
       let L = lock.buildings[b.id];
-      if (b.position){ b.x = b.position.x; b.z = b.position.z; continue; }
+      const hand = b.position || b.offset; // hand-placed: bypasses the auto spiral and the lock file
+      if (hand){
+        const {x, z, rot} = hand;
+        if (![x, z].every(Number.isFinite) || (rot != null && !Number.isFinite(rot))) throw new Error(`${b.id}: position/offset needs numeric x and z (and optional rot in degrees)`);
+        // position = world coordinates; offset = from the region centre (x east +, z south +)
+        b.x = r1(b.position ? x : reg.x + x); b.z = r1(b.position ? z : reg.z + z); continue;
+      }
       if (!L || L.region !== reg.id){
         while (taken.has(nextK)) nextK++;
         const k = nextK++, kk = k + K0, rr = C * Math.sqrt(kk), th = kk * 2.399963229728653;
@@ -266,6 +272,7 @@ export function buildManifest(root){
     h = Math.min(h * jit(SB.heightJitter), SB.heightMax);
     b.params = {w: r1(w * SB.scale), d: r1(w * jit(SB.depthJitter) * SB.scale), h: r1(h * SB.scale), rot: r1(g() * Math.PI * 2),
       age: r1(Math.min(1, Math.max(0, days(now, b.date) / SB.ageDays))), seed: Math.floor(g() * 1e9)};
+    const hr = (b.position || b.offset)?.rot; if (hr != null) b.params.rot = r1(hr * Math.PI / 180);
   }
 
   // ---- lock file

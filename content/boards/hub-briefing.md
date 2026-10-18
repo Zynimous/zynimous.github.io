@@ -1,9 +1,9 @@
 ---
 id: bd-hub-briefing
 region: hub
-x: 82
-z: -4
-width: 60
+x: -50
+z: 0
+width: 70
 kicker: BRIEFING · ABOUT ME
 title: 這張地圖怎麼讀
 ---

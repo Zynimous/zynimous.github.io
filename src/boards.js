@@ -23,7 +23,7 @@ addEventListener('resize', resize); resize();
 
 const items = BOARDS.map(d => {
   const el = document.createElement('article');
-  el.className = 'board';
+  el.className = 'board' + (d.plate ? '' : ' bare') + (d.fit ? ' fit' : '');
   el.style.width = d.px + 'px';
   const head = d.title || d.kicker ? `<header>${d.kicker ? `<div class="bd-k">${esc(d.kicker)}</div>` : ''}${d.title ? `<h3>${esc(d.title)}</h3>` : ''}</header>` : '';
   el.innerHTML = `${head}<div class="p-body bd-body">${d.html}</div>`;

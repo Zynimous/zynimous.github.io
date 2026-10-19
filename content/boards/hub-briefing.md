@@ -1,7 +1,7 @@
 ---
 id: bd-hub-briefing
 region: hub
-x: -50
+x: 100
 z: 0
 width: 70
 kicker: BRIEFING · ABOUT ME

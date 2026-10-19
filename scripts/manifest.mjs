@@ -115,7 +115,7 @@ function readBoards(root, byId){
     out.push({
       id: String(data.id), title: data.title || null, kicker: data.kicker || null,
       x: r1((reg ? reg.x : 0) + (+data.x || 0)), z: r1((reg ? reg.z : 0) + (+data.z || 0)),
-      width: +data.width || 60, px: +data.px || 440, rot: +data.rot || 0, face, html: renderBody(content).html
+      width: +data.width || 60, px: +data.px || 440, rot: +data.rot || 0, face, plate: data.plate !== false, fit: !!data.fit, html: renderBody(content).html
     });
   }
   if (errors.length) throw new Error('Board errors:\n  ' + errors.join('\n  '));

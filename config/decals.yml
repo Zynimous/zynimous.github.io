@@ -11,6 +11,6 @@
 #   opacity  0..1 (default 1)
 decals:
   - {id: hub-callsign, region: hub, x: 0, z: 62, text: ZYNIMOUS, size: 9, color: ash, opacity: .85}
-  - {id: hub-grid, region: hub, x: 0, z: 73, text: "SANDBOX · 示範內容", size: 3, font: mono, color: mute}
+  - {id: hub-grid, region: hub, x: 0, z: 73, text: "FULL STACK · SERVERS", size: 3, font: mono, color: ash}
   - {id: blogs-stamp, region: blogs, x: 58, z: 40, text: "FIELD\nNOTES", size: 6, rot: 14, color: mute, opacity: .7}
-  # - {id: prj-poster, region: projects, x: 0, z: 60, image: decals/poster.png, size: 30, face: upright}
+  # - {id: logo, region: hub, x: -100, z: 0, image: public/decals/logo_origin.png, size: 100}

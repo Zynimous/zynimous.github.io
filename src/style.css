@@ -35,6 +35,10 @@ body.focus #boards{opacity:0}
 .bd-body{font-size:14px;line-height:1.75;max-width:none}
 .bd-body>:first-child{margin-top:0}
 .bd-body a{pointer-events:auto}
+.bd-body img{display:block;width:100%;height:auto}
+.board.fit{padding:0;border-width:2px 0 0}
+.board.bare{background:none;border:0;padding:0}
+.board.fit .bd-body>*,.board.bare .bd-body>*{margin:0}
 .tag{position:absolute;left:0;top:0;will-change:transform,opacity;opacity:0;transition:opacity .35s}
 .tag.on{opacity:1}
 .tag .dot{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border:1px solid var(--ash);background:var(--void);transform:rotate(45deg)}
